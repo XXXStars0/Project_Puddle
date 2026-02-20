@@ -97,3 +97,48 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# =========================
+# System Cache Files
+# =========================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.cab
+*.lnk
+Desktop.ini
+$RECYCLE.BIN/
+
+# =========================
+# IDEs & Tools Cache
+# =========================
+
+# VS Code
+.vscode/
+
+# Cursor
+.cursor/
+
+# Antigravity (Agent)
+.antigravity/
+.gemini/
+
+# IntelliJ / Rider
+.idea/
