@@ -1,0 +1,136 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>
+/// Manages the dynamic spawning of random NPCs at screen edges and Power-ups within the map.
+/// Over time, more NPCs are spawned based on the survival duration stored in GameManager.
+/// </summary>
+public class EntitySpawner : MonoBehaviour
+{
+    [Header("NPC Spawning")]
+    public List<GameObject> npcPrefabs;
+    public float baseNPCSpawnInterval = 5f;
+    public int baseMaxNPCs = 3;
+    public float timeToReachMaxDifficulty = 120f; // Seconds to reach peak difficulty
+    public int peakMaxNPCs = 15;
+    
+    [Header("Power-up Spawning")]
+    public List<GameObject> powerUpPrefabs;
+    public float minPowerUpInterval = 10f;
+    public float maxPowerUpInterval = 25f;
+
+    private int activeNPCs = 0;
+
+    private void Start()
+    {
+        if (npcPrefabs.Count > 0)
+        {
+            StartCoroutine(SpawnNPCRoutine());
+        }
+        else
+        {
+            Debug.LogWarning("[EntitySpawner] No NPC prefabs assigned!");
+        }
+
+        if (powerUpPrefabs.Count > 0)
+        {
+            StartCoroutine(SpawnPowerUpRoutine());
+        }
+    }
+
+    // --- NPC Spawner ---
+    private IEnumerator SpawnNPCRoutine()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(baseNPCSpawnInterval);
+
+            // Calculate difficulty scaling based on survival time
+            float survivalTime = GameManager.Instance != null ? GameManager.Instance.survivalTime : 0f;
+            float difficultyRatio = Mathf.Clamp01(survivalTime / timeToReachMaxDifficulty);
+            int currentMaxNPCs = Mathf.RoundToInt(Mathf.Lerp(baseMaxNPCs, peakMaxNPCs, difficultyRatio));
+
+            if (activeNPCs < currentMaxNPCs)
+            {
+                SpawnRandomNPC();
+            }
+        }
+    }
+
+    private void SpawnRandomNPC()
+    {
+        GameObject prefab = npcPrefabs[Random.Range(0, npcPrefabs.Count)];
+        Vector3 spawnPos = GetRandomEdgePosition();
+
+        GameObject npc = Instantiate(prefab, spawnPos, Quaternion.identity);
+        
+        // Track NPC lifecycle
+        NPCBase npcScript = npc.GetComponent<NPCBase>();
+        if (npcScript != null)
+        {
+            activeNPCs++;
+            // Attach an internal monitor script to decrement counter when the NPC runs off screen and destroys itself
+            npc.AddComponent<NPCDeathMonitor>().OnDeath += () => activeNPCs--;
+        }
+    }
+
+    // Helper script to track NPC destruction safely
+    private class NPCDeathMonitor : MonoBehaviour
+    {
+        public System.Action OnDeath;
+        private void OnDestroy() { OnDeath?.Invoke(); }
+    }
+
+    private Vector3 GetRandomEdgePosition()
+    {
+        float x = 0f;
+        float y = 0f;
+
+        if (GameManager.Instance == null) return Vector3.zero;
+        Bounds bounds = GameManager.Instance.mapBounds;
+
+        // Choose randomly between Left/Right edges or Top/Bottom edges
+        if (Random.value > 0.5f)
+        {
+            // Left or Right
+            x = (Random.value > 0.5f) ? bounds.min.x - 2f : bounds.max.x + 2f;
+            y = Random.Range(bounds.min.y, bounds.max.y);
+        }
+        else
+        {
+            // Top or Bottom
+            x = Random.Range(bounds.min.x, bounds.max.x);
+            y = (Random.value > 0.5f) ? bounds.min.y - 2f : bounds.max.y + 2f;
+        }
+
+        return new Vector3(x, y, 0f);
+    }
+
+    // --- Power-up Spawner ---
+    private IEnumerator SpawnPowerUpRoutine()
+    {
+        while (true)
+        {
+            float waitTime = Random.Range(minPowerUpInterval, maxPowerUpInterval);
+            yield return new WaitForSeconds(waitTime);
+
+            SpawnRandomPowerUp();
+        }
+    }
+
+    private void SpawnRandomPowerUp()
+    {
+        if (GameManager.Instance == null) return;
+        Bounds bounds = GameManager.Instance.mapBounds;
+
+        GameObject prefab = powerUpPrefabs[Random.Range(0, powerUpPrefabs.Count)];
+        
+        // Spawn strictly inside the map
+        float rx = Random.Range(bounds.min.x + 1f, bounds.max.x - 1f);
+        float ry = Random.Range(bounds.min.y + 1f, bounds.max.y - 1f);
+        Vector3 spawnPos = new Vector3(rx, ry, 0f);
+
+        Instantiate(prefab, spawnPos, Quaternion.identity);
+    }
+}
