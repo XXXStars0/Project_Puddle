@@ -13,6 +13,12 @@ public class NPCBase : MonoBehaviour
     [Header("Mood Impact")]
     public float rainMoodPenalty = -10f;
     public float puddleMoodBonus = 15f;
+
+    [Header("Emotion (for head bar display)")]
+    [Tooltip("Per-NPC emotion value, 0=bad to 100=good")]
+    public float maxEmotion = 100f;
+    public float minEmotion = 0f;
+    [SerializeField] private float currentEmotion = 50f;
     
     [Header("Interactions & AI")]
     public float puddleShrinkAmount = 1.5f; // How much puddle size is consumed when stepped on
@@ -43,6 +49,14 @@ public class NPCBase : MonoBehaviour
 
         // Pick the first random spot to wander to
         PickNewWanderTarget();
+        currentEmotion = Mathf.Clamp(currentEmotion, minEmotion, maxEmotion);
+    }
+
+    /// <summary>Returns emotion as 0–1 for UI bars. 0 = worst, 1 = best.</summary>
+    public float GetEmotionRatio()
+    {
+        if (maxEmotion <= minEmotion) return 0.5f;
+        return Mathf.Clamp01((currentEmotion - minEmotion) / (maxEmotion - minEmotion));
     }
 
     protected virtual void Update()
@@ -189,10 +203,13 @@ public class NPCBase : MonoBehaviour
     {
         Debug.Log($"{gameObject.name} was rained on! Global mood penalties applied.");
         currentState = NPCState.Fleeing;
-        
-        if (GameManager.Instance != null)
-            GameManager.Instance.ModifyMood(rainMoodPenalty);
-            
+        float oldEmotion = currentEmotion;
+        currentEmotion = Mathf.Clamp(currentEmotion + rainMoodPenalty, minEmotion, maxEmotion);
+        float emotionDelta = currentEmotion - oldEmotion;
+
+        if (GameManager.Instance != null && emotionDelta != 0f)
+            GameManager.Instance.ModifyMood(emotionDelta);
+
         SetEdgeTarget();
     }
 
@@ -200,17 +217,21 @@ public class NPCBase : MonoBehaviour
     {
         Debug.Log($"{gameObject.name} splashed in a puddle! Feeling satisfied.");
         currentState = NPCState.Satisfied;
-        
+        float oldEmotion = currentEmotion;
+        currentEmotion = Mathf.Clamp(currentEmotion + puddleMoodBonus, minEmotion, maxEmotion);
+        float emotionDelta = currentEmotion - oldEmotion;
+
         // Shrink puddle
         puddle.ModifySize(-puddleShrinkAmount);
 
-        // Boost global mood and register satisfied score
+        // Global mood changes by this NPC's actual emotion change
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.ModifyMood(puddleMoodBonus);
+            if (emotionDelta != 0f)
+                GameManager.Instance.ModifyMood(emotionDelta);
             GameManager.Instance.RegisterNPCSatisfied();
         }
-            
+
         SetEdgeTarget();
     }
 }
