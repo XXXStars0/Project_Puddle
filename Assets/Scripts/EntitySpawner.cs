@@ -124,7 +124,15 @@ public class EntitySpawner : MonoBehaviour
         if (GameManager.Instance == null) return;
         Bounds bounds = GameManager.Instance.mapBounds;
 
-        GameObject prefab = powerUpPrefabs[Random.Range(0, powerUpPrefabs.Count)];
+        // Assumes index 0 is Water, others are different powerups. 
+        // 75% chance to drop Water, 25% chance to drop others like Speed.
+        int prefabIndex = 0;
+        if (powerUpPrefabs.Count > 1)
+        {
+            prefabIndex = Random.value <= 0.75f ? 0 : Random.Range(1, powerUpPrefabs.Count);
+        }
+
+        GameObject prefab = powerUpPrefabs[prefabIndex];
         
         // Spawn strictly inside the map
         float rx = Random.Range(bounds.min.x + 1f, bounds.max.x - 1f);

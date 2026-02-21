@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3805151429175595214}
   - component: {fileID: 3478398749292051419}
   m_Layer: 7
-  m_Name: Upgrade_DarkClouds
+  m_Name: PowerUp-Speed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -76,7 +76,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 7
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 0.4792453, g: 0.4792453, b: 0.4792453, a: 1}
+  m_Color: {r: 0.9710666, g: 1, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -98,8 +98,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 020429ec3e39cbc499ec1c801c19a03a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 2
+  type: 1
   amount: 20
+  lifetime: 8
+  spawnDuration: 0.5
+  flashDuration: 2
+  despawnDuration: 0.5
+  spriteTransform: {fileID: 0}
+  floatAmplitude: 0.15
+  floatSpeed: 3
+  moveDirection: {x: 0, y: 0, z: 0}
+  moveVelocity: 0
+  spawnSound: {fileID: 0}
   collectEffect: {fileID: 0}
 --- !u!58 &3478398749292051419
 CircleCollider2D:

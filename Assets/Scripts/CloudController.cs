@@ -16,12 +16,12 @@ public class CloudController : MonoBehaviour
     public string horizontalAxis = "Horizontal";
     [Tooltip("Input Manager Axis for Up/Down (e.g., 'Vertical')")]
     public string verticalAxis = "Vertical";
-    [Tooltip("Input Manager Button for Rain (e.g., 'Jump' maps to Space/Gamepad A)")]
+    [Tooltip("Input Manager Button for Rain (e.g. 'Jump'/'Submit' maps to Space/Gamepad A). Can map standard Xbox A here.")]
     public string rainButton = "Jump";
-    [Tooltip("Key to lower cloud (closer to shadow). Shadow stays fixed.")]
-    public KeyCode lowerHeightKey = KeyCode.J;
-    [Tooltip("Key to raise cloud (farther from shadow). Shadow stays fixed.")]
-    public KeyCode raiseHeightKey = KeyCode.K;
+    [Tooltip("Input Manager Button to lower cloud. Setup as 'LowerHeight' mapped to J or joystick button 4 (LB).")]
+    public string lowerHeightButton = "LowerHeight";
+    [Tooltip("Input Manager Button to raise cloud. Setup as 'RaiseHeight' mapped to K or joystick button 5 (RB).")]
+    public string raiseHeightButton = "RaiseHeight";
 
     [Header("Size Settings")]
     public float maxSize = 100f;
@@ -42,14 +42,25 @@ public class CloudController : MonoBehaviour
     public float heightAdjustSpeed = 4f;
     public GameObject shadowPrefab; // Optional: A sprite dropping a shadow on the ground
 
+    [Header("Audio")]
+    public AudioClip powerUpSound;
+    public AudioSource rainLoopSource; // Attach an AudioSource for continuous raining
+
     private bool isRaining = false;
     private Vector3 initialScale;
     private float nextRainSpawnTime = 0f;
     private float currentGroundY = float.MinValue; 
     private GameObject currentShadow;
 
+    // Visual feedback internals
+    private float visualBumpMultiplier = 1f;
+    private Coroutine bumpCoroutine;
+    private Coroutine speedBoostCoroutine;
+    private SpriteRenderer cloudSprite;
+
     void Start()
     {
+        cloudSprite = GetComponentInChildren<SpriteRenderer>();
         initialScale = transform.localScale;
         currentSize = maxSize;
         cloudHeightAboveGround = Mathf.Clamp(cloudHeightAboveGround, minCloudHeight, maxCloudHeight);
@@ -175,14 +186,26 @@ public class CloudController : MonoBehaviour
     {
         isRaining = true;
         Debug.Log("Started raining.");
-        // TODO: Play rain sound, trigger particle emission or instantiate continuous rain prefab
+        
+        if (rainLoopSource != null && !rainLoopSource.isPlaying)
+        {
+            rainLoopSource.Play();
+        }
+        
+        // TODO: trigger particle emission or instantiate continuous rain prefab
     }
 
     private void StopRain()
     {
         isRaining = false;
         Debug.Log("Stopped raining.");
-        // TODO: Stop rain sound, halt particle emission
+        
+        if (rainLoopSource != null && rainLoopSource.isPlaying)
+        {
+            rainLoopSource.Stop();
+        }
+
+        // TODO: halt particle emission
     }
 
     /// <summary>
@@ -190,14 +213,15 @@ public class CloudController : MonoBehaviour
     /// </summary>
     private void UpdateVisuals()
     {
-        // Scale the cloud texture/transform proportionally to its current size
-        float scaleMultiplier = currentSize / maxSize;
+        // Scale the cloud texture/transform proportionally to its current size, multiplied by bump feedback
+        float scaleMultiplier = (currentSize / maxSize) * visualBumpMultiplier;
         transform.localScale = initialScale * scaleMultiplier;
         
-        // Shadow visual scaling
+        // Shadow visual scaling (using stable base size, excluding bump bounce)
         if (currentShadow != null)
         {
-            currentShadow.transform.localScale = new Vector3(scaleMultiplier, scaleMultiplier, 1f);
+            float stableMultiplier = currentSize / maxSize;
+            currentShadow.transform.localScale = new Vector3(stableMultiplier, stableMultiplier, 1f);
         }
     }
 
@@ -207,14 +231,30 @@ public class CloudController : MonoBehaviour
     private void HandleHeightAdjust()
     {
         float delta = heightAdjustSpeed * Time.deltaTime;
-        if (Input.GetKey(lowerHeightKey))
+        
+        bool isLowering = false;
+        bool isRaising = false;
+        
+        try 
+        { 
+            isLowering = Input.GetButton(lowerHeightButton); 
+            isRaising = Input.GetButton(raiseHeightButton); 
+        } 
+        catch 
+        { 
+            // Fallback to old Keys if Input Manager is not configured yet
+            isLowering = Input.GetKey(KeyCode.J);
+            isRaising = Input.GetKey(KeyCode.K);
+        }
+
+        if (isLowering)
         {
             cloudHeightAboveGround -= delta;
             cloudHeightAboveGround = Mathf.Max(cloudHeightAboveGround, minCloudHeight);
             // Move cloud down so it gets closer to shadow; shadow Y (currentGroundY) unchanged
             transform.position = new Vector3(transform.position.x, currentGroundY + cloudHeightAboveGround, transform.position.z);
         }
-        if (Input.GetKey(raiseHeightKey))
+        if (isRaising)
         {
             cloudHeightAboveGround += delta;
             cloudHeightAboveGround = Mathf.Min(cloudHeightAboveGround, maxCloudHeight);
@@ -274,6 +314,14 @@ public class CloudController : MonoBehaviour
     {
         Debug.Log($"Collected power-up: {powerUpType} ({amount})");
         
+        if (AudioManager.Instance != null && powerUpSound != null)
+        {
+            AudioManager.Instance.PlaySFXRandomPitch(powerUpSound, 0.9f, 1.1f);
+        }
+        
+        if (bumpCoroutine != null) StopCoroutine(bumpCoroutine);
+        bumpCoroutine = StartCoroutine(CollectionBumpRoutine());
+        
         switch (powerUpType)
         {
             case "Water":
@@ -281,7 +329,8 @@ public class CloudController : MonoBehaviour
                 UpdateVisuals();
                 break;
             case "Speed":
-                // Temporary speed boost logic interface
+                if (speedBoostCoroutine != null) StopCoroutine(speedBoostCoroutine);
+                speedBoostCoroutine = StartCoroutine(SpeedBoostRoutine(amount));
                 break;
             case "DarkCloud":
                 maxSize += amount; // Increases maximum rain capacity
@@ -303,5 +352,55 @@ public class CloudController : MonoBehaviour
     {
         Debug.Log($"Applied environmental force: {force}");
         // TODO: Add external forces to movement or shape
+    }
+
+    // --- Feedback & Power-up Coroutines ---
+    
+    private System.Collections.IEnumerator CollectionBumpRoutine()
+    {
+        float t = 0f;
+        float duration = 0.3f; // Fast elastic bump
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            // Creates a bounce multiplier going 1.0 -> 1.3 -> 1.0
+            visualBumpMultiplier = 1f + Mathf.Sin((t / duration) * Mathf.PI) * 0.3f;
+            UpdateVisuals();
+            yield return null;
+        }
+        visualBumpMultiplier = 1f;
+        UpdateVisuals();
+    }
+
+    private System.Collections.IEnumerator SpeedBoostRoutine(float duration)
+    {
+        float originalMaxSpeed = maxSpeed;
+        float originalAccel = acceleration;
+        float originalDecel = deceleration;
+
+        // Boost speed and make handling much snappier (reduce slippery inertia)
+        maxSpeed = originalMaxSpeed * 1.5f;
+        acceleration = originalAccel * 4f; 
+        deceleration = originalDecel * 4f; 
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            
+            // Flashing glow effect ping-ponging between white and a bright energetic cyan
+            if (cloudSprite != null)
+            {
+                float flash = Mathf.PingPong(Time.time * 10f, 1f);
+                cloudSprite.color = Color.Lerp(Color.white, new Color(0.6f, 1f, 1f), flash);
+            }
+            yield return null;
+        }
+
+        // Restore handling attributes natively upon expiration
+        maxSpeed = originalMaxSpeed;
+        acceleration = originalAccel;
+        deceleration = originalDecel;
+        if (cloudSprite != null) cloudSprite.color = Color.white;
     }
 }
