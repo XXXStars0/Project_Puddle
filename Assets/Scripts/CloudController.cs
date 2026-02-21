@@ -52,8 +52,15 @@ public class CloudController : MonoBehaviour
     private float currentGroundY = float.MinValue; 
     private GameObject currentShadow;
 
+    // Visual feedback internals
+    private float visualBumpMultiplier = 1f;
+    private Coroutine bumpCoroutine;
+    private Coroutine speedBoostCoroutine;
+    private SpriteRenderer cloudSprite;
+
     void Start()
     {
+        cloudSprite = GetComponentInChildren<SpriteRenderer>();
         initialScale = transform.localScale;
         currentSize = maxSize;
         cloudHeightAboveGround = Mathf.Clamp(cloudHeightAboveGround, minCloudHeight, maxCloudHeight);
@@ -206,14 +213,15 @@ public class CloudController : MonoBehaviour
     /// </summary>
     private void UpdateVisuals()
     {
-        // Scale the cloud texture/transform proportionally to its current size
-        float scaleMultiplier = currentSize / maxSize;
+        // Scale the cloud texture/transform proportionally to its current size, multiplied by bump feedback
+        float scaleMultiplier = (currentSize / maxSize) * visualBumpMultiplier;
         transform.localScale = initialScale * scaleMultiplier;
         
-        // Shadow visual scaling
+        // Shadow visual scaling (using stable base size, excluding bump bounce)
         if (currentShadow != null)
         {
-            currentShadow.transform.localScale = new Vector3(scaleMultiplier, scaleMultiplier, 1f);
+            float stableMultiplier = currentSize / maxSize;
+            currentShadow.transform.localScale = new Vector3(stableMultiplier, stableMultiplier, 1f);
         }
     }
 
@@ -311,6 +319,9 @@ public class CloudController : MonoBehaviour
             AudioManager.Instance.PlaySFXRandomPitch(powerUpSound, 0.9f, 1.1f);
         }
         
+        if (bumpCoroutine != null) StopCoroutine(bumpCoroutine);
+        bumpCoroutine = StartCoroutine(CollectionBumpRoutine());
+        
         switch (powerUpType)
         {
             case "Water":
@@ -318,7 +329,8 @@ public class CloudController : MonoBehaviour
                 UpdateVisuals();
                 break;
             case "Speed":
-                // Temporary speed boost logic interface
+                if (speedBoostCoroutine != null) StopCoroutine(speedBoostCoroutine);
+                speedBoostCoroutine = StartCoroutine(SpeedBoostRoutine(amount));
                 break;
             case "DarkCloud":
                 maxSize += amount; // Increases maximum rain capacity
@@ -340,5 +352,55 @@ public class CloudController : MonoBehaviour
     {
         Debug.Log($"Applied environmental force: {force}");
         // TODO: Add external forces to movement or shape
+    }
+
+    // --- Feedback & Power-up Coroutines ---
+    
+    private System.Collections.IEnumerator CollectionBumpRoutine()
+    {
+        float t = 0f;
+        float duration = 0.3f; // Fast elastic bump
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            // Creates a bounce multiplier going 1.0 -> 1.3 -> 1.0
+            visualBumpMultiplier = 1f + Mathf.Sin((t / duration) * Mathf.PI) * 0.3f;
+            UpdateVisuals();
+            yield return null;
+        }
+        visualBumpMultiplier = 1f;
+        UpdateVisuals();
+    }
+
+    private System.Collections.IEnumerator SpeedBoostRoutine(float duration)
+    {
+        float originalMaxSpeed = maxSpeed;
+        float originalAccel = acceleration;
+        float originalDecel = deceleration;
+
+        // Boost speed and make handling much snappier (reduce slippery inertia)
+        maxSpeed = originalMaxSpeed * 1.5f;
+        acceleration = originalAccel * 4f; 
+        deceleration = originalDecel * 4f; 
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            
+            // Flashing glow effect ping-ponging between white and a bright energetic cyan
+            if (cloudSprite != null)
+            {
+                float flash = Mathf.PingPong(Time.time * 10f, 1f);
+                cloudSprite.color = Color.Lerp(Color.white, new Color(0.6f, 1f, 1f), flash);
+            }
+            yield return null;
+        }
+
+        // Restore handling attributes natively upon expiration
+        maxSpeed = originalMaxSpeed;
+        acceleration = originalAccel;
+        deceleration = originalDecel;
+        if (cloudSprite != null) cloudSprite.color = Color.white;
     }
 }
