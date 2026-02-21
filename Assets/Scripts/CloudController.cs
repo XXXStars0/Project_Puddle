@@ -18,6 +18,10 @@ public class CloudController : MonoBehaviour
     public string verticalAxis = "Vertical";
     [Tooltip("Input Manager Button for Rain (e.g., 'Jump' maps to Space/Gamepad A)")]
     public string rainButton = "Jump";
+    [Tooltip("Key to lower cloud (closer to shadow). Shadow stays fixed.")]
+    public KeyCode lowerHeightKey = KeyCode.J;
+    [Tooltip("Key to raise cloud (farther from shadow). Shadow stays fixed.")]
+    public KeyCode raiseHeightKey = KeyCode.K;
 
     [Header("Size Settings")]
     public float maxSize = 100f;
@@ -28,8 +32,14 @@ public class CloudController : MonoBehaviour
     [Header("Visuals & Environment")]
     public GameObject rainPrefab; // The raindrop prefab to spawn
     public float rainSpawnRate = 10f; // Raindrops per second
-    [Tooltip("2.5D空间中，云距离地面的视觉高度 (阴影的Y轴偏移量)")]
-    public float shadowOffset = 5f; 
+    [Tooltip("Cloud height above ground (shadow). Distance between cloud and shadow. J/K adjust this; shadow stays fixed.")]
+    public float cloudHeightAboveGround = 5f;
+    [Tooltip("Minimum cloud height above ground (closest to shadow).")]
+    public float minCloudHeight = 2f;
+    [Tooltip("Maximum cloud height above ground (farthest from shadow).")]
+    public float maxCloudHeight = 12f;
+    [Tooltip("Units per second when holding J/K to change height.")]
+    public float heightAdjustSpeed = 4f;
     public GameObject shadowPrefab; // Optional: A sprite dropping a shadow on the ground
 
     private bool isRaining = false;
@@ -42,6 +52,7 @@ public class CloudController : MonoBehaviour
     {
         initialScale = transform.localScale;
         currentSize = maxSize;
+        cloudHeightAboveGround = Mathf.Clamp(cloudHeightAboveGround, minCloudHeight, maxCloudHeight);
         UpdateShadow(); // Calculate ground once at start or every frame if ground height varies
 
         if (shadowPrefab != null)
@@ -60,6 +71,7 @@ public class CloudController : MonoBehaviour
 
         UpdateShadow(); // Keep shadow/ground level updated as we move
         HandleMovement();
+        HandleHeightAdjust(); // J/K: move cloud up/down relative to shadow (shadow stays fixed)
         HandleRain();
     }
 
@@ -190,16 +202,38 @@ public class CloudController : MonoBehaviour
     }
 
     /// <summary>
-    /// Updates the shadow projection based on a 2.5D fixed altitude.
+    /// Adjusts cloud height above ground with J/K. Shadow stays fixed; only the cloud moves vertically.
+    /// </summary>
+    private void HandleHeightAdjust()
+    {
+        float delta = heightAdjustSpeed * Time.deltaTime;
+        if (Input.GetKey(lowerHeightKey))
+        {
+            cloudHeightAboveGround -= delta;
+            cloudHeightAboveGround = Mathf.Max(cloudHeightAboveGround, minCloudHeight);
+            // Move cloud down so it gets closer to shadow; shadow Y (currentGroundY) unchanged
+            transform.position = new Vector3(transform.position.x, currentGroundY + cloudHeightAboveGround, transform.position.z);
+        }
+        if (Input.GetKey(raiseHeightKey))
+        {
+            cloudHeightAboveGround += delta;
+            cloudHeightAboveGround = Mathf.Min(cloudHeightAboveGround, maxCloudHeight);
+            // Move cloud up; shadow Y (currentGroundY) unchanged
+            transform.position = new Vector3(transform.position.x, currentGroundY + cloudHeightAboveGround, transform.position.z);
+        }
+    }
+
+    /// <summary>
+    /// Updates the shadow projection based on cloud height above ground (2.5D fixed altitude).
+    /// Shadow sits at cloud Y minus cloudHeightAboveGround.
     /// </summary>
     private void UpdateShadow()
     {
-        // 在 2.5D 俯视角地图中，"地面" 是整个背景空间。阴影只需保持固定的 Y 轴视觉高度差即可产生立体感。
-        currentGroundY = transform.position.y - shadowOffset;
-        
+        // In 2.5D top-down view, "ground" is the shadow plane. Keep shadow at fixed visual offset below cloud.
+        currentGroundY = transform.position.y - cloudHeightAboveGround;
+
         if (currentShadow != null)
         {
-            // 同步阴影到计算出的地面落点
             currentShadow.transform.position = new Vector3(transform.position.x, currentGroundY, 0);
         }
     }
