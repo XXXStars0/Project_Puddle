@@ -21,11 +21,12 @@ We have successfully completed the first playable core DEMO.
 ## 🎮 CONTROLS / 操作指南
 The game natively supports both keyboard and mainstream gamepad inputs. / 本作原生支持键盘与主流手柄输入：
 
-| Action / 操作                 | Keyboard / 键盘          | Gamepad / 手柄     |
-| :---------------------------- | :----------------------- | :----------------- |
-| **Move / 移动**               | `W` `A` `S` `D` / Arrows | Left Stick / D-Pad |
-| **Rain / 降雨**               | `Space` (空格)           | *Unchecked*        |
-| **Pause & Quit / 暂停与退出** | `ESC`                    | *Unchecked*        |
+| Action / 操作                 | Keyboard / 键盘          | Gamepad / 手柄                     |
+| :---------------------------- | :----------------------- | :--------------------------------- |
+| **Move / 移动**               | `W` `A` `S` `D` / Arrows | Left Stick / D-Pad                 |
+| **Rain / 降雨**               | `Space` (空格)           | `A` Button                         |
+| **Height Adjust / 高度升降**  | `J` / `K`                | `LB` / `RB`                        |
+| **Pause & Menu / 暂停与取消** | `ESC`                    | `B` Button *(Menu 没反应；待修正)* |
 
 ---
 

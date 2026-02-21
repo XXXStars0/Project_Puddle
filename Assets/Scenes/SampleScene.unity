@@ -3672,6 +3672,10 @@ MonoBehaviour:
     m_Extent: {x: 15, y: 10, z: 0}
   playerPrefab: {fileID: 972918692390118331, guid: 4ba552b0945d7f74ba6f307ff98e625a, type: 3}
   pauseInputButton: Cancel
+  cancelInputButton: Cancel
+  firstSelectedMenuButton: {fileID: 660355677}
+  firstSelectedPauseButton: {fileID: 13942820}
+  firstSelectedGameOverButton: {fileID: 1554496585}
   maxMood: 100
   startingMood: 50
   minMood: 0

@@ -17,8 +17,21 @@ public class GameManager : MonoBehaviour
     public GameObject playerPrefab;
     public Transform PlayerTransform { get; private set; }
 
-    [Header("Input Settings")]
-    public string pauseInputButton = "Cancel";
+    [Header("Input Settings (Gamepad/Keyboard)")]
+    [Tooltip("Input to pause/resume. E.g. create 'Pause' in InputManager mapped to joystick button 7 (Menu)")]
+    public string pauseInputButton = "Pause";
+    [Tooltip("Input to close menus/resume. 'Cancel' is usually ESC or Gamepad B.")]
+    public string cancelInputButton = "Cancel";
+
+    [Header("UI Navigation (Gamepad/DPad Support)")]
+    [Tooltip("First button to auto-select on Main Menu (for DPad)")]
+    public GameObject firstSelectedMenuButton;
+    [Tooltip("First button to auto-select on Pause Menu (for DPad)")]
+    public GameObject firstSelectedPauseButton;
+    [Tooltip("First button to auto-select on Game Over (for DPad)")]
+    public GameObject firstSelectedGameOverButton;
+
+    private GameObject lastSelectedUI; // Tracks last selected UI element to recover from mouse clicks
 
     [Header("Global Mood / Health")]
     public float maxMood = 100f;
@@ -89,6 +102,24 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        // Watch over UI selection so mouse clicks don't break Gamepad navigation forever
+        if (currentState != GameState.Playing && UnityEngine.EventSystems.EventSystem.current != null)
+        {
+            GameObject currentSel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+            if (currentSel != null && currentSel.activeInHierarchy)
+            {
+                lastSelectedUI = currentSel;
+            }
+            else if (currentSel == null && lastSelectedUI != null && lastSelectedUI.activeInHierarchy)
+            {
+                // Only snap back to UI if player tries to use D-Pad/Gamepad Stick
+                if (Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.1f || Mathf.Abs(Input.GetAxisRaw("Vertical")) > 0.1f)
+                {
+                    UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(lastSelectedUI);
+                }
+            }
+        }
+
         if (currentState == GameState.Playing)
         {
             survivalTime += Time.deltaTime;
@@ -107,7 +138,8 @@ public class GameManager : MonoBehaviour
         }
         else if (currentState == GameState.Paused)
         {
-            if (Input.GetButtonDown(pauseInputButton))
+            // Allow resuming via Pause button or Cancel button (Gamepad B)
+            if (Input.GetButtonDown(pauseInputButton) || Input.GetButtonDown(cancelInputButton))
             {
                 ResumeGame();
             }
@@ -118,11 +150,19 @@ public class GameManager : MonoBehaviour
     public void ChangeState(GameState newState)
     {
         currentState = newState;
+
+        // Clear UI selection to avoid ghost highlights
+        if (UnityEngine.EventSystems.EventSystem.current != null)
+        {
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+        }
+
         switch (newState)
         {
             case GameState.Menu:
                 Time.timeScale = 0f; // Freeze everything
                 OnStateMenu?.Invoke();
+                SetSelectedUIObject(firstSelectedMenuButton);
                 break;
             case GameState.Playing:
                 Time.timeScale = 1f; // Run normally
@@ -131,6 +171,7 @@ public class GameManager : MonoBehaviour
             case GameState.Paused:
                 Time.timeScale = 0f; // Pause physics/updates
                 OnStatePaused?.Invoke();
+                SetSelectedUIObject(firstSelectedPauseButton);
                 break;
             case GameState.GameOver:
                 Time.timeScale = 0f; // Freeze game
@@ -144,6 +185,24 @@ public class GameManager : MonoBehaviour
 
                 CheckAndSaveHighscore();
                 break;
+        }
+    }
+
+    private void SetSelectedUIObject(GameObject obj)
+    {
+        if (obj == null) return;
+        StartCoroutine(SelectUIObjectNextFrame(obj));
+    }
+
+    private System.Collections.IEnumerator SelectUIObjectNextFrame(GameObject obj)
+    {
+        // Wait one frame to ensure UI elements are fully active before EventSystem selects them
+        yield return null; 
+        if (UnityEngine.EventSystems.EventSystem.current != null)
+        {
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(obj);
+            lastSelectedUI = obj;
         }
     }
 

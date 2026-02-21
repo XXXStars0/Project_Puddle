@@ -16,12 +16,12 @@ public class CloudController : MonoBehaviour
     public string horizontalAxis = "Horizontal";
     [Tooltip("Input Manager Axis for Up/Down (e.g., 'Vertical')")]
     public string verticalAxis = "Vertical";
-    [Tooltip("Input Manager Button for Rain (e.g., 'Jump' maps to Space/Gamepad A)")]
+    [Tooltip("Input Manager Button for Rain (e.g. 'Jump'/'Submit' maps to Space/Gamepad A). Can map standard Xbox A here.")]
     public string rainButton = "Jump";
-    [Tooltip("Key to lower cloud (closer to shadow). Shadow stays fixed.")]
-    public KeyCode lowerHeightKey = KeyCode.J;
-    [Tooltip("Key to raise cloud (farther from shadow). Shadow stays fixed.")]
-    public KeyCode raiseHeightKey = KeyCode.K;
+    [Tooltip("Input Manager Button to lower cloud. Setup as 'LowerHeight' mapped to J or joystick button 4 (LB).")]
+    public string lowerHeightButton = "LowerHeight";
+    [Tooltip("Input Manager Button to raise cloud. Setup as 'RaiseHeight' mapped to K or joystick button 5 (RB).")]
+    public string raiseHeightButton = "RaiseHeight";
 
     [Header("Size Settings")]
     public float maxSize = 100f;
@@ -207,14 +207,30 @@ public class CloudController : MonoBehaviour
     private void HandleHeightAdjust()
     {
         float delta = heightAdjustSpeed * Time.deltaTime;
-        if (Input.GetKey(lowerHeightKey))
+        
+        bool isLowering = false;
+        bool isRaising = false;
+        
+        try 
+        { 
+            isLowering = Input.GetButton(lowerHeightButton); 
+            isRaising = Input.GetButton(raiseHeightButton); 
+        } 
+        catch 
+        { 
+            // Fallback to old Keys if Input Manager is not configured yet
+            isLowering = Input.GetKey(KeyCode.J);
+            isRaising = Input.GetKey(KeyCode.K);
+        }
+
+        if (isLowering)
         {
             cloudHeightAboveGround -= delta;
             cloudHeightAboveGround = Mathf.Max(cloudHeightAboveGround, minCloudHeight);
             // Move cloud down so it gets closer to shadow; shadow Y (currentGroundY) unchanged
             transform.position = new Vector3(transform.position.x, currentGroundY + cloudHeightAboveGround, transform.position.z);
         }
-        if (Input.GetKey(raiseHeightKey))
+        if (isRaising)
         {
             cloudHeightAboveGround += delta;
             cloudHeightAboveGround = Mathf.Min(cloudHeightAboveGround, maxCloudHeight);
