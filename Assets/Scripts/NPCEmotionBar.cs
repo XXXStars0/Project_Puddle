@@ -30,6 +30,8 @@ public class NPCEmotionBar : MonoBehaviour
 
     private SpriteRenderer _fillSprite;
     private float _lastRatio = -1f;
+    /// <summary>Cached Fill localScale.x when at "full" (1.0) so bar width matches Background.</summary>
+    private float _fillFullScaleX = 1f;
 
     private void Awake()
     {
@@ -37,7 +39,10 @@ public class NPCEmotionBar : MonoBehaviour
             npc = GetComponentInParent<NPCBase>();
 
         if (fill != null)
+        {
             _fillSprite = fill.GetComponent<SpriteRenderer>();
+            _fillFullScaleX = fill.localScale.x;
+        }
 
         if (background != null && fillOnly)
             background.gameObject.SetActive(false);
@@ -55,10 +60,12 @@ public class NPCEmotionBar : MonoBehaviour
         {
             float r = Mathf.Clamp01(ratio);
             Vector3 scale = fill.localScale;
-            scale.x = r;
+            scale.x = r * _fillFullScaleX; // same full width as Background so left/right edges align
             fill.localScale = scale;
-            // If fill pivot is center: shift so bar fills from left
-            fill.localPosition = new Vector3(-(1f - r) * (barWidth * 0.5f), 0f, 0f);
+
+            Vector3 pos = fill.localPosition;
+            pos.x = -(1f - r) * (_fillFullScaleX * 0.5f); // left-edge align with Background (pivot center)
+            fill.localPosition = pos;
 
             if (useColorGradient && _fillSprite != null)
                 _fillSprite.color = GetColorForRatio(ratio);

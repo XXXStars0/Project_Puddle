@@ -307,8 +307,8 @@ MonoBehaviour:
   npc: {fileID: 0}
   background: {fileID: 3800979187013809294}
   fill: {fileID: 8671735667365070231}
-  fillOnly: 1
-  heightOffset: 1.2
+  fillOnly: 0
+  heightOffset: 0
   barWidth: 1.5
   useColorGradient: 1
   colorLow: {r: 0.9, g: 0.2, b: 0.2, a: 1}
