@@ -7,10 +7,10 @@
 
 ## 📖 About / 项目简介
 **English:**  
-Project Cloud is a fun, fast-paced Game Jam practice project developed in Unity. You play as a cloud, raining on pedestrians to create puddles and spread happiness! We've just completed our first playable prototype (V1 Demo) and are currently looking for collaborators to take this core loop to the next level.
+Project Cloud is a fun, fast-paced Game Jam practice project developed in Unity. You play as a cloud, raining on pedestrians to create puddles and spread happiness! We've just completed our first playable prototype (V1 Demo) .
 
 **中文：**  
-《Project Cloud》是一个基于 Unity 引擎开发的小游戏 Game Jam 练手项目。在游戏中，你将扮演一朵软绵绵的云，通过降雨在地上制造水坑，让路过的行人们因为尽情踩水而变得快乐！我们的第一版核心可玩 DEMO 已搭建完毕，现在正寻找各路神仙队友一起进行深度的合作与打磨完善。
+《Project Cloud》是一个基于 Unity 引擎开发的小游戏 Game Jam 练手项目。在游戏中，你将扮演一朵软绵绵的云，通过降雨在地上制造水坑，让路过的行人们因为尽情踩水而变得快乐！我们的第一版核心可玩 DEMO 已搭建完毕。
 
 ---
 
@@ -41,7 +41,7 @@ The game fully supports both Keyboard and Gamepad inputs!
 
 ---
 
-## 🤝 We Need You! / 团队需求
+## 🤝 Further Plan / 团队需求
 We are actively looking for collaborative minds in the following areas:  
 代码的地基已经打好，我们现在非常迫切地需要以下方向的协助来为其注入灵魂：
 
