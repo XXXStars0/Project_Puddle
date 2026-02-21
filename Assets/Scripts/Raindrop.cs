@@ -15,6 +15,9 @@ public class Raindrop : MonoBehaviour
     public GameObject splashEffectPrefab; // Water splash particles
     public GameObject puddlePrefab;       // Puddle left on the ground
 
+    [Header("Audio")]
+    public AudioClip dropHitSound;
+
     private float lifetimeTimer = 0f;
     private float targetGroundY = float.MinValue; // Used to check if we hit the "ground" based on 2.5D shadow
 
@@ -115,6 +118,11 @@ public class Raindrop : MonoBehaviour
     private void OnHitGround()
     {
         Vector3 groundPos = new Vector3(transform.position.x, targetGroundY != float.MinValue ? targetGroundY : transform.position.y, 0f);
+
+        if (AudioManager.Instance != null && dropHitSound != null)
+        {
+            AudioManager.Instance.PlaySFXRandomPitch(dropHitSound, 0.8f, 1.2f);
+        }
 
         // Spawning the splash effect
         if (splashEffectPrefab != null)

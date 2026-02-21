@@ -42,6 +42,10 @@ public class CloudController : MonoBehaviour
     public float heightAdjustSpeed = 4f;
     public GameObject shadowPrefab; // Optional: A sprite dropping a shadow on the ground
 
+    [Header("Audio")]
+    public AudioClip powerUpSound;
+    public AudioSource rainLoopSource; // Attach an AudioSource for continuous raining
+
     private bool isRaining = false;
     private Vector3 initialScale;
     private float nextRainSpawnTime = 0f;
@@ -175,14 +179,26 @@ public class CloudController : MonoBehaviour
     {
         isRaining = true;
         Debug.Log("Started raining.");
-        // TODO: Play rain sound, trigger particle emission or instantiate continuous rain prefab
+        
+        if (rainLoopSource != null && !rainLoopSource.isPlaying)
+        {
+            rainLoopSource.Play();
+        }
+        
+        // TODO: trigger particle emission or instantiate continuous rain prefab
     }
 
     private void StopRain()
     {
         isRaining = false;
         Debug.Log("Stopped raining.");
-        // TODO: Stop rain sound, halt particle emission
+        
+        if (rainLoopSource != null && rainLoopSource.isPlaying)
+        {
+            rainLoopSource.Stop();
+        }
+
+        // TODO: halt particle emission
     }
 
     /// <summary>
@@ -289,6 +305,11 @@ public class CloudController : MonoBehaviour
     public void CollectPowerUp(string powerUpType, float amount)
     {
         Debug.Log($"Collected power-up: {powerUpType} ({amount})");
+        
+        if (AudioManager.Instance != null && powerUpSound != null)
+        {
+            AudioManager.Instance.PlaySFXRandomPitch(powerUpSound, 0.9f, 1.1f);
+        }
         
         switch (powerUpType)
         {

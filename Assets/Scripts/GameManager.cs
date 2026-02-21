@@ -160,20 +160,24 @@ public class GameManager : MonoBehaviour
         switch (newState)
         {
             case GameState.Menu:
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayMusic(AudioManager.Instance.titleBGM);
                 Time.timeScale = 0f; // Freeze everything
                 OnStateMenu?.Invoke();
                 SetSelectedUIObject(firstSelectedMenuButton);
                 break;
             case GameState.Playing:
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayMusic(AudioManager.Instance.gameBGM);
                 Time.timeScale = 1f; // Run normally
                 OnStatePlaying?.Invoke();
                 break;
             case GameState.Paused:
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayPause();
                 Time.timeScale = 0f; // Pause physics/updates
                 OnStatePaused?.Invoke();
                 SetSelectedUIObject(firstSelectedPauseButton);
                 break;
             case GameState.GameOver:
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayMusic(AudioManager.Instance.gameOverBGM);
                 Time.timeScale = 0f; // Freeze game
                 OnStateGameOver?.Invoke();
                 
