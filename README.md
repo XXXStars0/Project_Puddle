@@ -38,6 +38,7 @@ The game fully supports both Keyboard and Gamepad inputs!
 - **核心游戏循环**：稳健的全局状态机防穿游戏流（主菜单/游玩/暂停/结算）。
 - **实体系统**：基于时间增量的动态难度刷怪器机制、随机道具机制。
 - **系统闭环**：基于 PlayerPrefs 的最高分榜单持久化、响应式的 UI 弹窗与事件总线、带边界限制的平滑跟随摄像机。
+- **NPC 情感条**：每个 NPC 有独立情感值，头顶条随被雨淋/踩水坑变化；全局情绪值按每个 NPC 的情感变化量同步增减（见 `NPCBase` / `NPCEmotionBar`）。
 
 ---
 
