@@ -87,4 +87,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tileSize: 512
   preserveAspect: 1
-  scrollSpeed: {x: 0.5, y: 0.5}
+  scrollSpeed: {x: 0.25, y: 0.25}
