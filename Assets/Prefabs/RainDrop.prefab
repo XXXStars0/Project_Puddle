@@ -101,7 +101,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fallSpeed: 10
   maxLifetime: 5
-  splashEffectPrefab: {fileID: 259256700898930752, guid: 9eeb91bf1e3a30f4187107dbea9f765d, type: 3}
+  splashEffectPrefab: {fileID: 0}
   puddlePrefab: {fileID: 1890461292246626094, guid: 3de2626e513a5464eb137c29717e2f56, type: 3}
   puddleEnlargeAmount: 0.25
   dropHitSound: {fileID: 0}

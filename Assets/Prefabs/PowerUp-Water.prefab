@@ -99,7 +99,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 0
-  amount: 25
+  amount: 30
   lifetime: 8
   spawnDuration: 0.5
   flashDuration: 2

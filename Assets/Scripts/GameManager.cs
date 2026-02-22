@@ -182,14 +182,14 @@ public class GameManager : MonoBehaviour
                 SetSelectedUIObject(firstSelectedPauseButton);
                 break;
             case GameState.GameOver:
-                if (AudioManager.Instance != null) AudioManager.Instance.PlayGameOverSequence();
+                if (AudioManager.Instance != null) AudioManager.Instance.PlayMusic(AudioManager.Instance.gameOverBGM);
                 Time.timeScale = 0f; // Freeze game
                 OnStateGameOver?.Invoke();
                 
                 // Formulate the summary string for the current run
                 int m = Mathf.FloorToInt(survivalTime / 60);
                 int s = Mathf.FloorToInt(survivalTime % 60);
-                string summary = $"You kept the fun going for {m:00}:{s:00},\nand made {satisfiedNPCs} children happy!";
+                string summary = $"You survived {m:00}:{s:00} with {satisfiedNPCs} Happy NPCs!";
                 OnGameOverSummary?.Invoke(summary);
 
                 CheckAndSaveHighscore();
@@ -321,7 +321,7 @@ public class GameManager : MonoBehaviour
 
     private void UpdateNPCStatsUI()
     {
-        OnNPCStatsUpdated?.Invoke($"Happy: {satisfiedNPCs}\nTotal: {totalNPCsSpawned}");
+        OnNPCStatsUpdated?.Invoke($"{satisfiedNPCs} / {totalNPCsSpawned}");
     }
 
     // --- Highscore Logic ---
@@ -361,7 +361,7 @@ public class GameManager : MonoBehaviour
         int m = Mathf.FloorToInt(bestTime / 60);
         int s = Mathf.FloorToInt(bestTime % 60);
         
-        OnHighscoreUpdated?.Invoke($"BEST TIME: {m:00}:{s:00}\nHAPPY Children: {bestSatisfied}");
+        OnHighscoreUpdated?.Invoke($"BEST TIME: {m:00}:{s:00}\nHAPPY NPCs: {bestSatisfied}");
     }
 
     private void OnDrawGizmos()
