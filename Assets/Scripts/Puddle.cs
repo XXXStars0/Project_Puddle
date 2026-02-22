@@ -23,6 +23,12 @@ public class Puddle : MonoBehaviour
 
     private Vector3 initialScale;
 
+    private void Awake()
+    {
+        // Must be saved in Awake so it's ready instantly upon Instantiate, avoiding 0-scale race conditions
+        initialScale = transform.localScale;
+    }
+
     private void Start()
     {
         if (spriteRenderer != null && puddleVariants != null && puddleVariants.Length > 0)
@@ -30,7 +36,6 @@ public class Puddle : MonoBehaviour
             spriteRenderer.sprite = puddleVariants[Random.Range(0, puddleVariants.Length)];
         }
         
-        initialScale = transform.localScale;
         currentSize = startSize;
         UpdateVisuals();
     }
