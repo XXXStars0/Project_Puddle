@@ -22,7 +22,7 @@ public class PowerUp : MonoBehaviour
 
     [Header("Core Settings")]
     public PowerUpType type = PowerUpType.Water;
-    public float amount = 20f; // Amount to enhance
+    public float amount = 30f; // Amount to enhance
 
     [Header("Lifetime & Animation Timings")]
     public float lifetime = 8f;            // Total time before disappearing

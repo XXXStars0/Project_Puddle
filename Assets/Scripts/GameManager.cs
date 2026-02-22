@@ -40,6 +40,9 @@ public class GameManager : MonoBehaviour
     public float minMood = 0f;
     [Tooltip("How much mood is lost naturally per second")]
     public float moodDecayRate = 1.5f;
+    [Tooltip("Per-second scaling factor for decay. Effective decay = moodDecayRate * (1 + survivalTime * this). E.g. 0.01 → after 100s decay is 2x base.")]
+    [Range(0f, 0.1f)]
+    public float moodDecayScalePerSecond = 0.01f;
     
     [SerializeField] private float currentMood;
 
@@ -123,7 +126,9 @@ public class GameManager : MonoBehaviour
         if (currentState == GameState.Playing)
         {
             survivalTime += Time.deltaTime;
-            ModifyMood(-moodDecayRate * Time.deltaTime);
+            // Scale decay linearly with survival time to increase difficulty over time
+            float effectiveDecayRate = moodDecayRate * (1f + survivalTime * moodDecayScalePerSecond);
+            ModifyMood(-effectiveDecayRate * Time.deltaTime);
 
             // Update Time UI seamlessly
             int minutes = Mathf.FloorToInt(survivalTime / 60);

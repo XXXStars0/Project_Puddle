@@ -46,6 +46,14 @@ public class CloudController : MonoBehaviour
     public AudioClip powerUpSound;
     public AudioSource rainLoopSource; // Attach an AudioSource for continuous raining
 
+    [Header("Speed Power-up (multipliers)")]
+    [Tooltip("Max speed multiplier while Speed buff is active (e.g. 1.2 = 20% faster).")]
+    public float speedBoostMaxSpeedMultiplier = 1.2f;
+    [Tooltip("Acceleration multiplier during Speed buff (e.g. 1.5 = 50% snappier).")]
+    public float speedBoostAccelMultiplier = 1.5f;
+    [Tooltip("Deceleration multiplier during Speed buff. Higher = stops faster when releasing input, less inertia (e.g. 4.0 = 4x faster braking).")]
+    public float speedBoostDecelMultiplier = 4.0f;
+
     private bool isRaining = false;
     private Vector3 initialScale;
     private float nextRainSpawnTime = 0f;
@@ -386,10 +394,10 @@ public class CloudController : MonoBehaviour
         float originalAccel = acceleration;
         float originalDecel = deceleration;
 
-        // Boost speed and make handling much snappier (reduce slippery inertia)
-        maxSpeed = originalMaxSpeed * 1.5f;
-        acceleration = originalAccel * 4f; 
-        deceleration = originalDecel * 4f; 
+        // Apply configurable boost (reduced from previous 1.5x speed, 4x accel)
+        maxSpeed = originalMaxSpeed * speedBoostMaxSpeedMultiplier;
+        acceleration = originalAccel * speedBoostAccelMultiplier;
+        deceleration = originalDecel * speedBoostDecelMultiplier; 
 
         float elapsed = 0f;
         while (elapsed < duration)
