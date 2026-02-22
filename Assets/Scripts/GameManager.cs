@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.SceneManagement; // Needed for Restart/ReturnToMenu
+using UnityEngine.SceneManagement; 
 
 public class GameManager : MonoBehaviour
 {
@@ -8,69 +8,64 @@ public class GameManager : MonoBehaviour
 
     public enum GameState { Menu, Playing, Paused, GameOver }
     public GameState currentState { get; private set; } = GameState.Menu;
-    public static bool autoStartNextGame = false; // Used for seamless Restart
+    public static bool autoStartNextGame = false;
 
-    [Header("Level & Spawning Rules")]
-    [Tooltip("Visual boundaries for Camera, Player, and random Spawns")]
+    [Header("Level & Spawning")]
+    [Tooltip("Visual boundaries")]
     public Bounds mapBounds = new Bounds(Vector3.zero, new Vector3(30f, 20f, 0f));
-    [Tooltip("Drag your Cloud Prefab here to spawn it dynamically")]
+    [Tooltip("Cloud Prefab")]
     public GameObject playerPrefab;
     public Transform PlayerTransform { get; private set; }
 
-    [Header("Input Settings (Gamepad/Keyboard)")]
-    [Tooltip("Input to pause/resume. E.g. create 'Pause' in InputManager mapped to joystick button 7 (Menu)")]
+    [Header("Input (Gamepad/Keyboard)")]
+    [Tooltip("Pause/resume input")]
     public string pauseInputButton = "Pause";
-    [Tooltip("Input to close menus/resume. 'Cancel' is usually ESC or Gamepad B.")]
+    [Tooltip("Menu close input")]
     public string cancelInputButton = "Cancel";
 
-    [Header("UI Navigation (Gamepad/DPad Support)")]
-    [Tooltip("First button to auto-select on Main Menu (for DPad)")]
+    [Header("UI Navigation")]
+    [Tooltip("Main Menu selection")]
     public GameObject firstSelectedMenuButton;
-    [Tooltip("First button to auto-select on Pause Menu (for DPad)")]
+    [Tooltip("Pause Menu selection")]
     public GameObject firstSelectedPauseButton;
-    [Tooltip("First button to auto-select on Game Over (for DPad)")]
+    [Tooltip("Game Over selection")]
     public GameObject firstSelectedGameOverButton;
 
-    private GameObject lastSelectedUI; // Tracks last selected UI element to recover from mouse clicks
+    private GameObject lastSelectedUI;
 
-    [Header("Global Mood / Health")]
+    [Header("Health/Mood")]
     public float maxMood = 100f;
-    [Tooltip("Starting mood is not full as per design")]
     public float startingMood = 50f;
     public float minMood = 0f;
-    [Tooltip("How much mood is lost naturally per second")]
+    [Tooltip("Mood lost per second")]
     public float moodDecayRate = 1.5f;
-    [Tooltip("Per-second scaling factor for decay. Effective decay = moodDecayRate * (1 + survivalTime * this). E.g. 0.01 → after 100s decay is 2x base.")]
+    [Tooltip("Decay scaling over time")]
     [Range(0f, 0.1f)]
     public float moodDecayScalePerSecond = 0.01f;
     
     [SerializeField] private float currentMood;
 
-    [Header("Statistics / Scoring")]
+    [Header("Statistics")]
     public float survivalTime = 0f;
     public int totalNPCsSpawned = 0;
     public int satisfiedNPCs = 0;
 
-    [Header("HUD Events (Runtime)")]
-    public UnityEvent<float> OnMoodChanged; // Passes ratio 0-1 for UI sliders
-    public UnityEvent<string> OnTimeUpdated; // MM:SS string
-    public UnityEvent<string> OnNPCStatsUpdated; // "Happy / Total"
-    public UnityEvent<string> OnHighscoreUpdated; // Best Time / NPCs
+    [Header("HUD Events")]
+    public UnityEvent<float> OnMoodChanged;
+    public UnityEvent<string> OnTimeUpdated;
+    public UnityEvent<string> OnNPCStatsUpdated;
+    public UnityEvent<string> OnHighscoreUpdated;
     
-    [Tooltip("Push formatted sentences like 'You survived 2 mins...' to GameOver UI Panel")]
+    [Tooltip("Summary for GameOver UI")]
     public UnityEvent<string> OnGameOverSummary;
 
-    [Header("State Machine UI Events (Panels)")]
-    [Tooltip("Hook up your Main Menu Canvas Panel here via SetActive(true/false)")]
+    [Header("Panels")]
     public UnityEvent OnStateMenu;
-    [Tooltip("Hook up your HUD Canvas Panel here via SetActive(true/false)")]
     public UnityEvent OnStatePlaying;
-    [Tooltip("Hook up your Pause Canvas Panel here via SetActive(true/false)")]
     public UnityEvent OnStatePaused;
-    [Tooltip("Hook up your GameOver Canvas Panel here via SetActive(true/false)")]
     public UnityEvent OnStateGameOver;
 
-    [Header("Sub-Menu UI Events (Overlays)")]
+    [Header("Overlays")]
     public UnityEvent OnSettingsOpened;
     public UnityEvent OnSettingsClosed;
     public UnityEvent OnGuideOpened;
@@ -105,7 +100,6 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        // Watch over UI selection so mouse clicks don't break Gamepad navigation forever
         if (currentState != GameState.Playing && UnityEngine.EventSystems.EventSystem.current != null)
         {
             GameObject currentSel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
@@ -115,7 +109,6 @@ public class GameManager : MonoBehaviour
             }
             else if (currentSel == null && lastSelectedUI != null && lastSelectedUI.activeInHierarchy)
             {
-                // Only snap back to UI if player tries to use D-Pad/Gamepad Stick
                 if (Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.1f || Mathf.Abs(Input.GetAxisRaw("Vertical")) > 0.1f)
                 {
                     UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(lastSelectedUI);
@@ -126,16 +119,13 @@ public class GameManager : MonoBehaviour
         if (currentState == GameState.Playing)
         {
             survivalTime += Time.deltaTime;
-            // Scale decay linearly with survival time to increase difficulty over time
             float effectiveDecayRate = moodDecayRate * (1f + survivalTime * moodDecayScalePerSecond);
             ModifyMood(-effectiveDecayRate * Time.deltaTime);
 
-            // Update Time UI seamlessly
             int minutes = Mathf.FloorToInt(survivalTime / 60);
             int seconds = Mathf.FloorToInt(survivalTime % 60);
             OnTimeUpdated?.Invoke(string.Format("{0:00}:{1:00}", minutes, seconds));
 
-            // Dynamic Button checking
             if (Input.GetButtonDown(pauseInputButton))
             {
                 PauseGame();
@@ -143,7 +133,6 @@ public class GameManager : MonoBehaviour
         }
         else if (currentState == GameState.Paused)
         {
-            // Allow resuming via Pause button or Cancel button (Gamepad B)
             if (Input.GetButtonDown(pauseInputButton) || Input.GetButtonDown(cancelInputButton))
             {
                 ResumeGame();
@@ -151,12 +140,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // --- State Machine & Flow Control ---
     public void ChangeState(GameState newState)
     {
         currentState = newState;
 
-        // Clear UI selection to avoid ghost highlights
         if (UnityEngine.EventSystems.EventSystem.current != null)
         {
             UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
@@ -166,27 +153,26 @@ public class GameManager : MonoBehaviour
         {
             case GameState.Menu:
                 if (AudioManager.Instance != null) AudioManager.Instance.PlayMusic(AudioManager.Instance.titleBGM);
-                Time.timeScale = 0f; // Freeze everything
+                Time.timeScale = 0f;
                 OnStateMenu?.Invoke();
                 SetSelectedUIObject(firstSelectedMenuButton);
                 break;
             case GameState.Playing:
                 if (AudioManager.Instance != null) AudioManager.Instance.PlayMusic(AudioManager.Instance.gameBGM);
-                Time.timeScale = 1f; // Run normally
+                Time.timeScale = 1f;
                 OnStatePlaying?.Invoke();
                 break;
             case GameState.Paused:
                 if (AudioManager.Instance != null) AudioManager.Instance.PlayPause();
-                Time.timeScale = 0f; // Pause physics/updates
+                Time.timeScale = 0f;
                 OnStatePaused?.Invoke();
                 SetSelectedUIObject(firstSelectedPauseButton);
                 break;
             case GameState.GameOver:
                 if (AudioManager.Instance != null) AudioManager.Instance.PlayGameOverSequence();
-                Time.timeScale = 0f; // Freeze game
+                Time.timeScale = 0f;
                 OnStateGameOver?.Invoke();
                 
-                // Formulate the summary string for the current run
                 int m = Mathf.FloorToInt(survivalTime / 60);
                 int s = Mathf.FloorToInt(survivalTime % 60);
                 string summary = $"You kept the fun going for {m:00}:{s:00},\nand made {satisfiedNPCs} children happy!";
@@ -205,7 +191,6 @@ public class GameManager : MonoBehaviour
 
     private System.Collections.IEnumerator SelectUIObjectNextFrame(GameObject obj)
     {
-        // Wait one frame to ensure UI elements are fully active before EventSystem selects them
         yield return null; 
         if (UnityEngine.EventSystems.EventSystem.current != null)
         {
@@ -215,10 +200,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // --- Public Button Interfaces ---
     public void StartGame()
     {
-        // Handle Dynamic Player Spawning
         if (PlayerTransform != null)
         {
             Destroy(PlayerTransform.gameObject);
@@ -228,14 +211,13 @@ public class GameManager : MonoBehaviour
         {
             GameObject newPlayer = Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
             PlayerTransform = newPlayer.transform;
-            Debug.Log("[GameManager] Player spawned successfully.");
+            // Debug.Log("[GameManager] Player spawned successfully.");
         }
         else
         {
-            Debug.LogWarning("[GameManager] No Player Prefab assigned! Make sure to assign the Cloud Prefab.");
+            // Debug.LogWarning("[GameManager] No Player Prefab assigned!");
         }
 
-        // Reset all metrics for a fresh run
         currentMood = startingMood;
         survivalTime = 0f;
         totalNPCsSpawned = 0;
@@ -261,7 +243,6 @@ public class GameManager : MonoBehaviour
 
     public void ReturnToMenu()
     {
-        // Simplest way to clean up all dynamically spawned items/puddles/NPCs is to reload the active scene
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
@@ -273,7 +254,7 @@ public class GameManager : MonoBehaviour
 
     public void QuitGame()
     {
-        Debug.Log("[GameManager] Quitting Game...");
+        // Debug.Log("[GameManager] Quitting Game...");
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -286,7 +267,6 @@ public class GameManager : MonoBehaviour
     public void OpenGuide() { OnGuideOpened?.Invoke(); }
     public void CloseGuide() { OnGuideClosed?.Invoke(); }
     
-    // --- Existing Mechanics ---
     public void ModifyMood(float amount)
     {
         if (currentState != GameState.Playing) return;
@@ -324,7 +304,6 @@ public class GameManager : MonoBehaviour
         OnNPCStatsUpdated?.Invoke($"Happy: {satisfiedNPCs}\nTotal: {totalNPCsSpawned}");
     }
 
-    // --- Highscore Logic ---
     private void CheckAndSaveHighscore()
     {
         float bestTime = PlayerPrefs.GetFloat("Highscore_Time", 0f);
@@ -347,7 +326,7 @@ public class GameManager : MonoBehaviour
 
         if (newRecord)
         {
-            PlayerPrefs.Save(); // Ensures it writes to disk immediately
+            PlayerPrefs.Save();
         }
 
         UpdateHighscoreUI();

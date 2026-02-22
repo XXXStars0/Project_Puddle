@@ -1,16 +1,26 @@
 using UnityEngine;
 
-/// <summary>
-/// A lightweight script to automatically destroy splash effect graphics after a short time.
-/// </summary>
 public class SplashVisual : MonoBehaviour
 {
-    [Tooltip("How long the splash image stays on screen before disappearing.")]
+    [Tooltip("Fallback lifetime if no Animator is found.")]
     public float lifetime = 0.3f;
 
     void Start()
     {
-        // Automatically vanish after 'lifetime' seconds
-        Destroy(gameObject, lifetime);
+        Animator animator = GetComponent<Animator>();
+        if (animator != null)
+        {
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            Destroy(gameObject, stateInfo.length);
+        }
+        else
+        {
+            Destroy(gameObject, lifetime);
+        }
+    }
+
+    public void DestroySelf()
+    {
+        Destroy(gameObject);
     }
 }

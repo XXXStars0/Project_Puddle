@@ -1,15 +1,11 @@
 using UnityEngine;
 
-/// <summary>
-/// A dynamic power-up that the Cloud can collect.
-/// Features animations (spawn, float, blink, despawn) and moving variants.
-/// </summary>
 public class PowerUp : MonoBehaviour
 {
     public enum PowerUpType
     {
-        Water, // Refill rain
-        Speed  // Temporary acceleration
+        Water, 
+        Speed  
     }
 
     private enum PowerUpState
@@ -20,41 +16,36 @@ public class PowerUp : MonoBehaviour
         Despawning
     }
 
-    [Header("Core Settings")]
+    [Header("Core")]
     public PowerUpType type = PowerUpType.Water;
-    public float amount = 30f; // Amount to enhance
+    public float amount = 30f; 
 
-    [Header("Lifetime & Animation Timings")]
-    public float lifetime = 8f;            // Total time before disappearing
-    public float spawnDuration = 0.5f;     // Time for elastic pop-in
-    public float flashDuration = 2.0f;     // Starts flashing when life remaining <= this
-    public float despawnDuration = 0.5f;   // Time to shrink before destruction
+    [Header("Timings")]
+    public float lifetime = 8f;            
+    public float spawnDuration = 0.5f;     
+    public float flashDuration = 2.0f;     
+    public float despawnDuration = 0.5f;   
 
-    [Header("Visuals, Movement & Variants")]
-    [Tooltip("Assign the child Sprite GameObject so it can scale/flash independently of the Collider.")]
+    [Header("Visuals")]
     public Transform spriteTransform;
-    public float floatAmplitude = 0.15f;    // Up/down bobbing distance
-    public float floatSpeed = 3f;          // Up/down bobbing speed
-    
-    [Tooltip("Give it a direction and speed to create moving power-up variants!")]
+    public float floatAmplitude = 0.15f;    
+    public float floatSpeed = 3f;          
     public Vector3 moveDirection = Vector3.zero; 
     public float moveVelocity = 0f;
 
     [Header("Effects")]
     public AudioClip spawnSound;
-    public GameObject collectEffect; // Particle/Sound effect on collection
+    public GameObject collectEffect; 
 
     private PowerUpState state = PowerUpState.Spawning;
     private float stateTimer = 0f;
     private float totalAliveTime = 0f;
-    
     private Vector3 initialScale;
     private Vector3 basePosition;
     private SpriteRenderer spriteRenderer;
 
     private void Start()
     {
-        // Try to automatically find a child visual if not assigned
         if (spriteTransform == null && transform.childCount > 0) 
         {
             spriteTransform = transform.GetChild(0);
@@ -64,11 +55,10 @@ public class PowerUp : MonoBehaviour
         {
             spriteRenderer = spriteTransform.GetComponent<SpriteRenderer>();
             initialScale = spriteTransform.localScale;
-            spriteTransform.localScale = Vector3.zero; // Start shrunk
+            spriteTransform.localScale = Vector3.zero; 
         }
         else 
         {
-            // Fallback to self if no child sprite exists
             spriteRenderer = GetComponent<SpriteRenderer>();
             initialScale = transform.localScale;
             transform.localScale = Vector3.zero;
@@ -76,7 +66,6 @@ public class PowerUp : MonoBehaviour
 
         basePosition = transform.position;
 
-        // Ensure Physics overlap works robustly
         Collider2D col = GetComponent<Collider2D>();
         if (col != null) col.isTrigger = true;
 
@@ -84,7 +73,6 @@ public class PowerUp : MonoBehaviour
         if (rb == null) rb = gameObject.AddComponent<Rigidbody2D>();
         rb.isKinematic = true;
 
-        // Play spawn sound
         if (AudioManager.Instance != null && spawnSound != null)
         {
             AudioManager.Instance.PlaySFXRandomPitch(spawnSound, 0.9f, 1.15f);
@@ -102,15 +90,11 @@ public class PowerUp : MonoBehaviour
 
     private void HandleMovement()
     {
-        // Floating (bobbing) effect calculated relative to the traveling basePosition
         float floatOffset = Mathf.Sin(totalAliveTime * floatSpeed) * floatAmplitude;
-        
-        // Continuous horizontal/diagonal drift for moving variants
         if (moveVelocity > 0f && moveDirection != Vector3.zero)
         {
              basePosition += moveDirection.normalized * moveVelocity * Time.deltaTime;
         }
-        
         transform.position = basePosition + new Vector3(0f, floatOffset, 0f);
     }
 
@@ -121,34 +105,26 @@ public class PowerUp : MonoBehaviour
         switch (state)
         {
             case PowerUpState.Spawning:
-                // Elastic Easing calculation for pop-in scale
                 float t = Mathf.Clamp01(stateTimer / spawnDuration);
                 float elasticT = ElasticOut(t);
                 ScaleTarget(initialScale * elasticT);
-
-                if (t >= 1f)
-                {
-                    ChangeState(PowerUpState.Idle);
-                }
+                if (t >= 1f) ChangeState(PowerUpState.Idle);
                 break;
 
             case PowerUpState.Idle:
-                // Transition to flashing if time is running out
                 if (timeRemaining <= (flashDuration + despawnDuration) && timeRemaining > despawnDuration)
                 {
                     ChangeState(PowerUpState.Flashing);
                 }
-                else if (timeRemaining <= despawnDuration) // Failsafe
+                else if (timeRemaining <= despawnDuration) 
                 {
                     ChangeState(PowerUpState.Despawning);
                 }
                 break;
 
             case PowerUpState.Flashing:
-                // Fast blink effect by toggling Alpha (or visibility)
                 if (spriteRenderer != null)
                 {
-                    // PingPong creates a pulsing wave. Speed it up by multiplying time.
                     float alpha = Mathf.PingPong(totalAliveTime * 20f, 1f) > 0.5f ? 1f : 0.2f;
                     Color c = spriteRenderer.color;
                     c.a = alpha;
@@ -159,10 +135,8 @@ public class PowerUp : MonoBehaviour
                     spriteTransform.gameObject.SetActive(Mathf.PingPong(totalAliveTime * 20f, 1f) > 0.5f);
                 }
 
-                // If flashing ends, transition to shrink-and-die
                 if (timeRemaining <= despawnDuration)
                 {
-                    // Reset visuals to full visibility before shrinking
                     if (spriteRenderer != null)
                     {
                         Color c = spriteRenderer.color;
@@ -173,20 +147,14 @@ public class PowerUp : MonoBehaviour
                     {
                         spriteTransform.gameObject.SetActive(true);
                     }
-                    
                     ChangeState(PowerUpState.Despawning);
                 }
                 break;
 
             case PowerUpState.Despawning:
-                // Smooth scale down to 0 vector
                 float despawnT = Mathf.Clamp01(stateTimer / despawnDuration);
                 ScaleTarget(Vector3.Lerp(initialScale, Vector3.zero, despawnT));
-
-                if (despawnT >= 1f)
-                {
-                    Destroy(gameObject);
-                }
+                if (despawnT >= 1f) Destroy(gameObject);
                 break;
         }
     }
@@ -199,17 +167,10 @@ public class PowerUp : MonoBehaviour
 
     private void ScaleTarget(Vector3 newScale)
     {
-        if (spriteTransform != null)
-        {
-            spriteTransform.localScale = newScale;
-        }
-        else
-        {
-            transform.localScale = newScale;
-        }
+        if (spriteTransform != null) spriteTransform.localScale = newScale;
+        else transform.localScale = newScale;
     }
 
-    // Mathematical formula for a nice bouncy pop-in effect
     private float ElasticOut(float t)
     {
         if (t == 0) return 0;
@@ -220,22 +181,14 @@ public class PowerUp : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // Prevent pickup if we are already practically invisible and dying
         if (state == PowerUpState.Despawning && stateTimer > despawnDuration * 0.5f) return;
 
-        // Search upward in case the cloud's collider is in a child object
         CloudController cloud = collision.GetComponentInParent<CloudController>();
         if (cloud != null)
         {
             cloud.CollectPowerUp(type.ToString(), amount);
-
-            if (collectEffect != null)
-            {
-                // Play particle explosion/VFX
-                Instantiate(collectEffect, transform.position, Quaternion.identity);
-            }
-
-            Destroy(gameObject); // Self destruct upon collection
+            if (collectEffect != null) Instantiate(collectEffect, transform.position, Quaternion.identity);
+            Destroy(gameObject); 
         }
     }
 }
