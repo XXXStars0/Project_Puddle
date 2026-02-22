@@ -17,8 +17,8 @@ public class EntitySpawner : MonoBehaviour
     
     [Header("Power-up Spawning")]
     public List<GameObject> powerUpPrefabs;
-    public float minPowerUpInterval = 10f;
-    public float maxPowerUpInterval = 25f;
+    public float minPowerUpInterval = 4f;
+    public float maxPowerUpInterval = 8f;
 
     private int activeNPCs = 0;
 
@@ -112,7 +112,12 @@ public class EntitySpawner : MonoBehaviour
     {
         while (true)
         {
-            float waitTime = Random.Range(minPowerUpInterval, maxPowerUpInterval);
+            // Interval increases linearly from minPowerUpInterval (4s) to maxPowerUpInterval (8s) over time
+            float survivalTime = GameManager.Instance != null ? GameManager.Instance.survivalTime : 0f;
+            float ratio = Mathf.Clamp01(survivalTime / timeToReachMaxDifficulty);
+            float waitTime = Mathf.Lerp(minPowerUpInterval, maxPowerUpInterval, ratio);
+            waitTime = Mathf.Max(1f, Random.Range(waitTime - 1f, waitTime + 1f)); // ±1s random
+
             yield return new WaitForSeconds(waitTime);
 
             SpawnRandomPowerUp();
