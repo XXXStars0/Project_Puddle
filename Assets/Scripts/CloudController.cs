@@ -54,13 +54,20 @@ public class CloudController : MonoBehaviour
     [Tooltip("Deceleration multiplier during Speed buff. Higher = stops faster when releasing input, less inertia (e.g. 4.0 = 4x faster braking).")]
     public float speedBoostDecelMultiplier = 4.0f;
 
+    private float baseMaxSpeed;
+    private float baseAcceleration;
+    private float baseDeceleration;
+    private float speedBoostEndTime = 0f;
+
     private bool isRaining = false;
     private Vector3 initialScale;
     private float nextRainSpawnTime = 0f;
     private float currentGroundY = float.MinValue; 
     private GameObject currentShadow;
 
-    // Visual feedback internals
+    // Visual feedback & audio internals
+    private Coroutine rainFadeCoroutine;
+    private float defaultRainVolume = 1f;
     private float visualBumpMultiplier = 1f;
     private Coroutine bumpCoroutine;
     private Coroutine speedBoostCoroutine;
@@ -68,6 +75,10 @@ public class CloudController : MonoBehaviour
 
     void Start()
     {
+        baseMaxSpeed = maxSpeed;
+        baseAcceleration = acceleration;
+        baseDeceleration = deceleration;
+
         cloudSprite = GetComponentInChildren<SpriteRenderer>();
         initialScale = transform.localScale;
         currentSize = maxSize;
@@ -77,6 +88,14 @@ public class CloudController : MonoBehaviour
         if (shadowPrefab != null)
         {
             currentShadow = Instantiate(shadowPrefab, new Vector3(transform.position.x, currentGroundY, 0), Quaternion.identity);
+        }
+
+        // Force stop the rain audio loop at the very beginning
+        // This prevents the bug where "Play On Awake" in the Inspector causes it to play automatically at launch
+        if (rainLoopSource != null)
+        {
+            defaultRainVolume = rainLoopSource.volume; // Cache the designer's inspector volume!
+            rainLoopSource.Stop();
         }
 
         Debug.Log("Cloud initialized. Ready to move and rain.");
@@ -195,12 +214,23 @@ public class CloudController : MonoBehaviour
         isRaining = true;
         Debug.Log("Started raining.");
         
-        if (rainLoopSource != null && !rainLoopSource.isPlaying)
+        if (rainLoopSource != null)
         {
-            rainLoopSource.Play();
+            // If it was currently fading out from a recent stop, cancel the fade-out instantly
+            if (rainFadeCoroutine != null)
+            {
+                StopCoroutine(rainFadeCoroutine);
+                rainFadeCoroutine = null;
+            }
+            
+            // Snap volume immediately back to full
+            rainLoopSource.volume = defaultRainVolume;
+            
+            if (!rainLoopSource.isPlaying)
+            {
+                rainLoopSource.Play();
+            }
         }
-        
-        // TODO: trigger particle emission or instantiate continuous rain prefab
     }
 
     private void StopRain()
@@ -208,12 +238,40 @@ public class CloudController : MonoBehaviour
         isRaining = false;
         Debug.Log("Stopped raining.");
         
-        if (rainLoopSource != null && rainLoopSource.isPlaying)
+        if (rainLoopSource != null && rainLoopSource.gameObject.activeInHierarchy)
         {
-            rainLoopSource.Stop();
+            if (rainFadeCoroutine != null)
+            {
+                StopCoroutine(rainFadeCoroutine);
+            }
+            // Trigger the smooth fade out instead of an abrupt .Stop()
+            rainFadeCoroutine = StartCoroutine(FadeOutRainAudio());
+        }
+    }
+
+    private System.Collections.IEnumerator FadeOutRainAudio()
+    {
+        // 0.5 seconds of fast, elegant fade-out
+        float fadeDuration = 0.5f;
+        float startVol = rainLoopSource.volume;
+        float t = 0f;
+
+        while (t < fadeDuration)
+        {
+            if (rainLoopSource == null) yield break;
+            t += Time.deltaTime;
+            rainLoopSource.volume = Mathf.Lerp(startVol, 0f, t / fadeDuration);
+            yield return null;
         }
 
-        // TODO: halt particle emission
+        if (rainLoopSource != null)
+        {
+            // Fully stop and prepare for next start
+            rainLoopSource.Stop();
+            rainLoopSource.volume = defaultRainVolume;
+        }
+
+        rainFadeCoroutine = null;
     }
 
     /// <summary>
@@ -345,8 +403,11 @@ public class CloudController : MonoBehaviour
                 UpdateVisuals();
                 break;
             case "Speed":
-                if (speedBoostCoroutine != null) StopCoroutine(speedBoostCoroutine);
-                speedBoostCoroutine = StartCoroutine(SpeedBoostRoutine(amount));
+                speedBoostEndTime = Time.time + amount;
+                if (speedBoostCoroutine == null)
+                {
+                    speedBoostCoroutine = StartCoroutine(SpeedBoostRoutine());
+                }
                 break;
             case "DarkCloud":
                 maxSize += amount; // Increases maximum rain capacity
@@ -388,22 +449,17 @@ public class CloudController : MonoBehaviour
         UpdateVisuals();
     }
 
-    private System.Collections.IEnumerator SpeedBoostRoutine(float duration)
+    private System.Collections.IEnumerator SpeedBoostRoutine()
     {
-        float originalMaxSpeed = maxSpeed;
-        float originalAccel = acceleration;
-        float originalDecel = deceleration;
-
         // Apply configurable boost (reduced from previous 1.5x speed, 4x accel)
-        maxSpeed = originalMaxSpeed * speedBoostMaxSpeedMultiplier;
-        acceleration = originalAccel * speedBoostAccelMultiplier;
-        deceleration = originalDecel * speedBoostDecelMultiplier; 
+        maxSpeed = baseMaxSpeed * speedBoostMaxSpeedMultiplier;
+        acceleration = baseAcceleration * speedBoostAccelMultiplier;
+        deceleration = baseDeceleration * speedBoostDecelMultiplier; 
 
-        float elapsed = 0f;
-        while (elapsed < duration)
+        if (AudioManager.Instance != null) AudioManager.Instance.SetSpeedBGMState(true);
+
+        while (Time.time < speedBoostEndTime)
         {
-            elapsed += Time.deltaTime;
-            
             // Flashing glow effect ping-ponging between white and a bright energetic cyan
             if (cloudSprite != null)
             {
@@ -414,9 +470,13 @@ public class CloudController : MonoBehaviour
         }
 
         // Restore handling attributes natively upon expiration
-        maxSpeed = originalMaxSpeed;
-        acceleration = originalAccel;
-        deceleration = originalDecel;
+        maxSpeed = baseMaxSpeed;
+        acceleration = baseAcceleration;
+        deceleration = baseDeceleration;
         if (cloudSprite != null) cloudSprite.color = Color.white;
+        
+        if (AudioManager.Instance != null) AudioManager.Instance.SetSpeedBGMState(false);
+        
+        speedBoostCoroutine = null;
     }
 }
