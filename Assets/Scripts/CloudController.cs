@@ -99,6 +99,17 @@ public class CloudController : MonoBehaviour
         float h = Input.GetAxisRaw(horizontalAxis);
         float v = Input.GetAxisRaw(verticalAxis);
         
+        if (h == 0f)
+        {
+            if (Input.GetKey(KeyCode.A)) h = -1f;
+            if (Input.GetKey(KeyCode.D)) h = 1f;
+        }
+        if (v == 0f)
+        {
+            if (Input.GetKey(KeyCode.S)) v = -1f;
+            if (Input.GetKey(KeyCode.W)) v = 1f;
+        }
+
         Vector2 inputVector = new Vector2(h, v);
         
         if (inputVector.magnitude > 1f)
