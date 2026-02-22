@@ -54,7 +54,7 @@ public class NPCBase : MonoBehaviour
     public string animTriggerHappyLeave = "HappyLeave";
     public string animTriggerSadLeave = "SadLeave";
 
-    protected enum NPCState { Wandering, PlayingInWater, Fleeing, Satisfied }
+    protected enum NPCState { Wandering, Searching, PlayingInWater, Fleeing, Satisfied }
     protected NPCState currentState = NPCState.Wandering;
 
     protected Vector2 targetPosition;
@@ -116,8 +116,9 @@ public class NPCBase : MonoBehaviour
             case NPCState.Wandering:
                 Wander();
                 break;
+            case NPCState.Searching:
             case NPCState.PlayingInWater:
-                // Stand still while playing animation/routine
+                // Stand still while searching or playing animation/routine
                 break;
             case NPCState.Fleeing:
             case NPCState.Satisfied:
@@ -141,6 +142,10 @@ public class NPCBase : MonoBehaviour
             case NPCState.Wandering:
                 currentSpeed = walkAnimSpeed;
                 currentArray = walkSprites;
+                break;
+            case NPCState.Searching:
+                currentSpeed = walkAnimSpeed * 2f; // Slower or custom frame speed when surprised
+                currentArray = walkSprites; // Or use jumpSprites if jumping in surprise
                 break;
             case NPCState.PlayingInWater:
                 currentSpeed = jumpAnimSpeed;
@@ -214,8 +219,8 @@ public class NPCBase : MonoBehaviour
 
     protected virtual void FindNearbyPuddle()
     {
-        int layerMask = puddleLayer.value == 0 ? Physics2D.AllLayers : puddleLayer.value;
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, puddleDetectionRadius, layerMask);
+        // Removed LayerMask limitation to avoid Inspector misconfiguration where Puddle is on default layer but mask isn't set.
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, puddleDetectionRadius);
         float closestDist = float.MaxValue;
         Puddle closestPuddle = null;
 
@@ -237,12 +242,27 @@ public class NPCBase : MonoBehaviour
         {
             if (targetPuddle != closestPuddle) // Just found a new puddle!
             {
-                ShowBubble(bubbleFoundPuddle);
-                if (anim != null) anim.SetTrigger(animTriggerFoundPuddle);
+                targetPuddle = closestPuddle;
+                targetPosition = targetPuddle.transform.position;
+                
+                StartCoroutine(ReactToPuddleRoutine());
             }
+        }
+    }
 
-            targetPuddle = closestPuddle;
-            targetPosition = targetPuddle.transform.position;
+    private System.Collections.IEnumerator ReactToPuddleRoutine()
+    {
+        currentState = NPCState.Searching; // Pause movement immediately
+        ShowBubble(bubbleFoundPuddle);
+        if (anim != null) anim.SetTrigger(animTriggerFoundPuddle);
+        
+        // Wait briefly for the "!" animation and sound to register clearly (0.6 seconds)
+        yield return new WaitForSeconds(0.6f);
+        
+        // If they didn't get rained on in the meantime, resume walking towards it
+        if (currentState == NPCState.Searching)
+        {
+            currentState = NPCState.Wandering; 
         }
     }
 
