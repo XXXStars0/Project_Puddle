@@ -33,7 +33,6 @@ public class NPCBase : MonoBehaviour
     [Header("Animation & Visuals")]
     [Tooltip("Uses custom 2-frame sprite swapping if assigned.")]
     public SpriteRenderer mainSpriteRenderer;
-    public GameObject puddleSplashPrefab; // Instantiated when stepping in water
     public Sprite[] walkSprites; // child_idle, child_walk
     public Sprite[] jumpSprites; // child_crouch, child_jump
     public float walkAnimSpeed = 0.25f;
@@ -55,7 +54,7 @@ public class NPCBase : MonoBehaviour
     public string animTriggerHappyLeave = "HappyLeave";
     public string animTriggerSadLeave = "SadLeave";
 
-    protected enum NPCState { Wandering, Searching, PlayingInWater, Fleeing, Satisfied }
+    protected enum NPCState { Wandering, PlayingInWater, Fleeing, Satisfied }
     protected NPCState currentState = NPCState.Wandering;
 
     protected Vector2 targetPosition;
@@ -117,9 +116,8 @@ public class NPCBase : MonoBehaviour
             case NPCState.Wandering:
                 Wander();
                 break;
-            case NPCState.Searching:
             case NPCState.PlayingInWater:
-                // Stand still while searching or playing animation/routine
+                // Stand still while playing animation/routine
                 break;
             case NPCState.Fleeing:
             case NPCState.Satisfied:
@@ -143,10 +141,6 @@ public class NPCBase : MonoBehaviour
             case NPCState.Wandering:
                 currentSpeed = walkAnimSpeed;
                 currentArray = walkSprites;
-                break;
-            case NPCState.Searching:
-                currentSpeed = walkAnimSpeed * 2f; // Slower or custom frame speed when surprised
-                currentArray = walkSprites; // Or use jumpSprites if jumping in surprise
                 break;
             case NPCState.PlayingInWater:
                 currentSpeed = jumpAnimSpeed;
@@ -220,8 +214,8 @@ public class NPCBase : MonoBehaviour
 
     protected virtual void FindNearbyPuddle()
     {
-        // Removed LayerMask limitation to avoid Inspector misconfiguration where Puddle is on default layer but mask isn't set.
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, puddleDetectionRadius);
+        int layerMask = puddleLayer.value == 0 ? Physics2D.AllLayers : puddleLayer.value;
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, puddleDetectionRadius, layerMask);
         float closestDist = float.MaxValue;
         Puddle closestPuddle = null;
 
@@ -243,27 +237,12 @@ public class NPCBase : MonoBehaviour
         {
             if (targetPuddle != closestPuddle) // Just found a new puddle!
             {
-                targetPuddle = closestPuddle;
-                targetPosition = targetPuddle.transform.position;
-                
-                StartCoroutine(ReactToPuddleRoutine());
+                ShowBubble(bubbleFoundPuddle);
+                if (anim != null) anim.SetTrigger(animTriggerFoundPuddle);
             }
-        }
-    }
 
-    private System.Collections.IEnumerator ReactToPuddleRoutine()
-    {
-        currentState = NPCState.Searching; // Pause movement immediately
-        ShowBubble(bubbleFoundPuddle);
-        if (anim != null) anim.SetTrigger(animTriggerFoundPuddle);
-        
-        // Wait briefly for the "!" animation and sound to register clearly (0.6 seconds)
-        yield return new WaitForSeconds(0.6f);
-        
-        // If they didn't get rained on in the meantime, resume walking towards it
-        if (currentState == NPCState.Searching)
-        {
-            currentState = NPCState.Wandering; 
+            targetPuddle = closestPuddle;
+            targetPosition = targetPuddle.transform.position;
         }
     }
 
@@ -353,11 +332,6 @@ public class NPCBase : MonoBehaviour
         if (AudioManager.Instance != null && puddleSplashSound != null)
         {
             AudioManager.Instance.PlaySFXRandomPitch(puddleSplashSound, 0.85f, 1.15f);
-        }
-
-        if (puddleSplashPrefab != null)
-        {
-            Instantiate(puddleSplashPrefab, new Vector3(transform.position.x, transform.position.y - 0.2f, 0f), Quaternion.identity);
         }
             
         StartCoroutine(PlayInWaterRoutine());
