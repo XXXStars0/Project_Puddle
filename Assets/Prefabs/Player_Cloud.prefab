@@ -118,11 +118,8 @@ MonoBehaviour:
   maxCloudHeight: 12
   heightAdjustSpeed: 4
   shadowPrefab: {fileID: 5545242360663455383, guid: 1ff4bad572cb2274c89c8bda6a302e30, type: 3}
-  powerUpSound: {fileID: 8300000, guid: 6af4ce45293166840be22705363151a8, type: 3}
+  powerUpSound: {fileID: 0}
   rainLoopSource: {fileID: 6328173725979781727}
-  speedBoostMaxSpeedMultiplier: 1.2
-  speedBoostAccelMultiplier: 1.5
-  speedBoostDecelMultiplier: 4
 --- !u!82 &6328173725979781727
 AudioSource:
   m_ObjectHideFlags: 0
@@ -133,15 +130,15 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 0ae217019c903bd42b365c4b3a157de5, type: 3}
-  m_PlayOnAwake: 0
+  m_audioClip: {fileID: 0}
+  m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
-  Loop: 1
+  Loop: 0
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
-  Priority: 10
+  Priority: 128
   DopplerLevel: 1
   MinDistance: 1
   MaxDistance: 500
