@@ -72,7 +72,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 3
+  m_SortingOrder: 4
   m_Sprite: {fileID: 21300000, guid: c0ec91925db34f44c98d2d34be4cbf01, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -203,6 +203,7 @@ MonoBehaviour:
   soundSad: {fileID: 0}
   puddleSplashSound: {fileID: 0}
   mainSpriteRenderer: {fileID: 2476905963911091668}
+  puddleSplashPrefab: {fileID: 2785191031678403877, guid: f7b612fcc2a9f3647a9543eb600c3c81, type: 3}
   walkSprites:
   - {fileID: 21300000, guid: 0991c90e5ab4bf944b976751e5fba0fb, type: 3}
   - {fileID: 21300000, guid: 16dd515b327637a45be526b0951e7f6d, type: 3}
@@ -354,7 +355,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 3
+  m_SortingOrder: 4
   m_Sprite: {fileID: 21300000, guid: 00bd8864c3407444d87661856a63118f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -438,7 +439,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 3
+  m_SortingOrder: 4
   m_Sprite: {fileID: 21300000, guid: b09db22f691570741bdb1a0859f77316, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0

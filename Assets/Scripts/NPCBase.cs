@@ -33,6 +33,7 @@ public class NPCBase : MonoBehaviour
     [Header("Animation & Visuals")]
     [Tooltip("Uses custom 2-frame sprite swapping if assigned.")]
     public SpriteRenderer mainSpriteRenderer;
+    public GameObject puddleSplashPrefab; // Instantiated when stepping in water
     public Sprite[] walkSprites; // child_idle, child_walk
     public Sprite[] jumpSprites; // child_crouch, child_jump
     public float walkAnimSpeed = 0.25f;
@@ -352,6 +353,11 @@ public class NPCBase : MonoBehaviour
         if (AudioManager.Instance != null && puddleSplashSound != null)
         {
             AudioManager.Instance.PlaySFXRandomPitch(puddleSplashSound, 0.85f, 1.15f);
+        }
+
+        if (puddleSplashPrefab != null)
+        {
+            Instantiate(puddleSplashPrefab, new Vector3(transform.position.x, transform.position.y - 0.2f, 0f), Quaternion.identity);
         }
             
         StartCoroutine(PlayInWaterRoutine());
