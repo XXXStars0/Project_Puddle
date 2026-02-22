@@ -188,7 +188,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   walkSpeed: 2
   runSpeed: 4
-  rainMoodPenalty: -10
+  rainMoodPenalty: -25
   puddleMoodBonus: 20
   puddleShrinkAmount: 2
   puddleDetectionRadius: 3
@@ -199,9 +199,9 @@ MonoBehaviour:
   bubbleHappy: {fileID: 946550341353528166}
   bubbleSad: {fileID: 5412397135527753016}
   soundFoundPuddle: {fileID: 0}
-  soundHappy: {fileID: 0}
-  soundSad: {fileID: 0}
-  puddleSplashSound: {fileID: 0}
+  soundHappy: {fileID: 8300000, guid: 1540134a421dc214cbbf5eedb02bfdfc, type: 3}
+  soundSad: {fileID: 8300000, guid: 773c9b3bdd6d25c4489d72119dd0312d, type: 3}
+  puddleSplashSound: {fileID: 8300000, guid: 564b0751580ed2e4995ffdfbd1db961f, type: 3}
   mainSpriteRenderer: {fileID: 2476905963911091668}
   puddleSplashPrefab: {fileID: 2785191031678403877, guid: f7b612fcc2a9f3647a9543eb600c3c81, type: 3}
   walkSprites:
