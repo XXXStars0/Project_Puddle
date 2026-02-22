@@ -54,6 +54,11 @@ public class CloudController : MonoBehaviour
     [Tooltip("Deceleration multiplier during Speed buff. Higher = stops faster when releasing input, less inertia (e.g. 4.0 = 4x faster braking).")]
     public float speedBoostDecelMultiplier = 4.0f;
 
+    private float baseMaxSpeed;
+    private float baseAcceleration;
+    private float baseDeceleration;
+    private float speedBoostEndTime = 0f;
+
     private bool isRaining = false;
     private Vector3 initialScale;
     private float nextRainSpawnTime = 0f;
@@ -68,6 +73,10 @@ public class CloudController : MonoBehaviour
 
     void Start()
     {
+        baseMaxSpeed = maxSpeed;
+        baseAcceleration = acceleration;
+        baseDeceleration = deceleration;
+
         cloudSprite = GetComponentInChildren<SpriteRenderer>();
         initialScale = transform.localScale;
         currentSize = maxSize;
@@ -345,8 +354,11 @@ public class CloudController : MonoBehaviour
                 UpdateVisuals();
                 break;
             case "Speed":
-                if (speedBoostCoroutine != null) StopCoroutine(speedBoostCoroutine);
-                speedBoostCoroutine = StartCoroutine(SpeedBoostRoutine(amount));
+                speedBoostEndTime = Time.time + amount;
+                if (speedBoostCoroutine == null)
+                {
+                    speedBoostCoroutine = StartCoroutine(SpeedBoostRoutine());
+                }
                 break;
             case "DarkCloud":
                 maxSize += amount; // Increases maximum rain capacity
@@ -388,22 +400,15 @@ public class CloudController : MonoBehaviour
         UpdateVisuals();
     }
 
-    private System.Collections.IEnumerator SpeedBoostRoutine(float duration)
+    private System.Collections.IEnumerator SpeedBoostRoutine()
     {
-        float originalMaxSpeed = maxSpeed;
-        float originalAccel = acceleration;
-        float originalDecel = deceleration;
-
         // Apply configurable boost (reduced from previous 1.5x speed, 4x accel)
-        maxSpeed = originalMaxSpeed * speedBoostMaxSpeedMultiplier;
-        acceleration = originalAccel * speedBoostAccelMultiplier;
-        deceleration = originalDecel * speedBoostDecelMultiplier; 
+        maxSpeed = baseMaxSpeed * speedBoostMaxSpeedMultiplier;
+        acceleration = baseAcceleration * speedBoostAccelMultiplier;
+        deceleration = baseDeceleration * speedBoostDecelMultiplier; 
 
-        float elapsed = 0f;
-        while (elapsed < duration)
+        while (Time.time < speedBoostEndTime)
         {
-            elapsed += Time.deltaTime;
-            
             // Flashing glow effect ping-ponging between white and a bright energetic cyan
             if (cloudSprite != null)
             {
@@ -414,9 +419,11 @@ public class CloudController : MonoBehaviour
         }
 
         // Restore handling attributes natively upon expiration
-        maxSpeed = originalMaxSpeed;
-        acceleration = originalAccel;
-        deceleration = originalDecel;
+        maxSpeed = baseMaxSpeed;
+        acceleration = baseAcceleration;
+        deceleration = baseDeceleration;
         if (cloudSprite != null) cloudSprite.color = Color.white;
+        
+        speedBoostCoroutine = null;
     }
 }
