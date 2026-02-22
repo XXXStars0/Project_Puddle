@@ -2256,9 +2256,11 @@ MonoBehaviour:
   masterMixer: {fileID: 0}
   musicSource: {fileID: 691973632}
   sfxSource: {fileID: 691973631}
-  titleBGM: {fileID: 0}
-  gameBGM: {fileID: 0}
-  gameOverBGM: {fileID: 0}
+  titleBGM: {fileID: 8300000, guid: e14c1f6e8b74f499eab24fec02b37138, type: 3}
+  gameBGM: {fileID: 8300000, guid: e14c1f6e8b74f499eab24fec02b37138, type: 3}
+  gameOverBGM: {fileID: 8300000, guid: e14c1f6e8b74f499eab24fec02b37138, type: 3}
+  gameBGMLoopEndSeconds: 18.8
+  gameBGMFadeSeconds: 1.5
   buttonClickSFX: {fileID: 0}
   pauseSFX: {fileID: 0}
 --- !u!4 &691973634
@@ -8540,6 +8542,7 @@ MonoBehaviour:
   startingMood: 50
   minMood: 0
   moodDecayRate: 1.5
+  moodDecayScalePerSecond: 0.01
   currentMood: 0
   survivalTime: 0
   totalNPCsSpawned: 0
