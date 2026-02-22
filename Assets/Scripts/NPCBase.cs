@@ -11,7 +11,7 @@ public class NPCBase : MonoBehaviour
     public float puddleMoodBonus = 15f;
     
     [Header("AI")]
-    public float puddleShrinkAmount = 1.5f; 
+    public float puddleShrinkAmount = 0.5f; 
     public float puddleDetectionRadius = 4f; 
     public LayerMask puddleLayer; 
 
@@ -164,11 +164,7 @@ public class NPCBase : MonoBehaviour
 
     protected virtual void Wander()
     {
-        if (targetPuddle == null)
-        {
-            FindNearbyPuddle();
-        }
-        else
+        if (targetPuddle != null)
         {
             if (!targetPuddle.gameObject.activeInHierarchy || targetPuddle.currentSize <= 0)
             {
@@ -176,10 +172,19 @@ public class NPCBase : MonoBehaviour
                 ShowBubble(null); 
                 PickNewWanderTarget();
             }
-            else
+        }
+
+        if (targetPuddle == null)
+        {
+            if (bubbleFoundPuddle != null && bubbleFoundPuddle.activeSelf)
             {
-                targetPosition = targetPuddle.transform.position;
+                ShowBubble(null);
             }
+            FindNearbyPuddle();
+        }
+        else
+        {
+            targetPosition = targetPuddle.transform.position;
         }
 
         transform.position = Vector3.MoveTowards(transform.position, targetPosition, walkSpeed * Time.deltaTime);
@@ -235,11 +240,26 @@ public class NPCBase : MonoBehaviour
         ShowBubble(bubbleFoundPuddle);
         if (anim != null) anim.SetTrigger(animTriggerFoundPuddle);
         
-        yield return new WaitForSeconds(0.6f);
+        float timer = 0f;
+        while (timer < 0.6f)
+        {
+            if (targetPuddle == null || !targetPuddle.gameObject.activeInHierarchy || targetPuddle.currentSize <= 0)
+            {
+                break;
+            }
+            timer += Time.deltaTime;
+            yield return null;
+        }
         
         if (currentState == NPCState.Searching)
         {
             currentState = NPCState.Wandering; 
+            if (targetPuddle == null || !targetPuddle.gameObject.activeInHierarchy || targetPuddle.currentSize <= 0)
+            {
+                targetPuddle = null;
+                ShowBubble(null);
+                PickNewWanderTarget();
+            }
         }
     }
 

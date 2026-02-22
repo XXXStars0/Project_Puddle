@@ -9141,7 +9141,7 @@ MonoBehaviour:
   maxMood: 100
   startingMood: 50
   minMood: 0
-  moodDecayRate: 1.5
+  moodDecayRate: 2.5
   moodDecayScalePerSecond: 0.01
   currentMood: 0
   survivalTime: 0
