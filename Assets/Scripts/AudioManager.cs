@@ -30,12 +30,6 @@ public class AudioManager : MonoBehaviour
     [Header("Game Over Sequencing")]
     [Tooltip("Plays immediately on death. The Game Over BGM will automatically wait for this to finish before looping.")]
     public AudioClip gameOverSFX;
-    [Header("BGM Loop (optional)")]
-    [Tooltip("若 > 0，gameBGM 只循环播放前 N 秒（例如 18 秒自动回到开头）")]
-    public float gameBGMLoopEndSeconds = 18.8f;
-    [Tooltip("循环处淡入淡出时长（秒），让衔接更自然")]
-    [Range(0.2f, 4f)]
-    public float gameBGMFadeSeconds = 1.5f;
 
     [Header("UI SFX")]
     public AudioClip buttonClickSFX;
@@ -181,34 +175,6 @@ public class AudioManager : MonoBehaviour
         // Use Realtime so the delay works perfectly even when Time.timeScale = 0
         yield return new WaitForSecondsRealtime(delay);
         PlayMusic(clip);
-        musicSource.clip = clip;
-        // gameBGM 使用自定义 18 秒循环，其余 BGM 使用整段循环
-        bool useCustomLoop = (clip == gameBGM && gameBGMLoopEndSeconds > 0f);
-        musicSource.loop = !useCustomLoop;
-        musicSource.volume = 1f; // 非循环 BGM 保持满音量；循环 BGM 由 Update 做淡入淡出
-        musicSource.Play();
-    }
-
-    private void Update()
-    {
-        // 对 gameBGM 做 18 秒段循环 + 淡入淡出
-        if (musicSource == null || musicSource.clip != gameBGM || !musicSource.isPlaying) return;
-        if (gameBGMLoopEndSeconds <= 0f) return;
-
-        float t = musicSource.time;
-        float fade = Mathf.Clamp(gameBGMFadeSeconds, 0.01f, gameBGMLoopEndSeconds * 0.5f);
-        float vol = 1f;
-
-        // 开头淡入
-        if (t < fade)
-            vol = t / fade;
-        // 结尾淡出
-        else if (t >= gameBGMLoopEndSeconds - fade)
-            vol = (gameBGMLoopEndSeconds - t) / fade;
-        musicSource.volume = vol;
-
-        if (t >= gameBGMLoopEndSeconds)
-            musicSource.time = 0f;
     }
 
     public void PlaySFX(AudioClip clip)
