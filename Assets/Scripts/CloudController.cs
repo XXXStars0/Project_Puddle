@@ -1,57 +1,42 @@
 using UnityEngine;
 
-/// <summary>
-/// Controls the behavior of the 2D Cloud character.
-/// </summary>
 public class CloudController : MonoBehaviour
 {
-    [Header("Movement Settings (Momentum)")]
+    [Header("Movement")]
     public float maxSpeed = 10f;
     public float acceleration = 25f;
     public float deceleration = 15f;
     private Vector2 currentVelocity;
     
-    [Header("Control Bindings")]
-    [Tooltip("Input Manager Axis for Left/Right (e.g., 'Horizontal')")]
+    [Header("Inputs")]
     public string horizontalAxis = "Horizontal";
-    [Tooltip("Input Manager Axis for Up/Down (e.g., 'Vertical')")]
     public string verticalAxis = "Vertical";
-    [Tooltip("Input Manager Button for Rain (e.g. 'Jump'/'Submit' maps to Space/Gamepad A). Can map standard Xbox A here.")]
     public string rainButton = "Jump";
-    [Tooltip("Input Manager Button to lower cloud. Setup as 'LowerHeight' mapped to J or joystick button 4 (LB).")]
     public string lowerHeightButton = "LowerHeight";
-    [Tooltip("Input Manager Button to raise cloud. Setup as 'RaiseHeight' mapped to K or joystick button 5 (RB).")]
     public string raiseHeightButton = "RaiseHeight";
 
-    [Header("Size Settings")]
+    [Header("Size")]
     public float maxSize = 100f;
     public float minSize = 20f;
     public float currentSize = 100f;
-    public float rainCostPerSecond = 15f; // How much size is lost per second of raining
+    public float rainCostPerSecond = 15f; 
 
-    [Header("Visuals & Environment")]
-    public GameObject rainPrefab; // The raindrop prefab to spawn
-    public float rainSpawnRate = 10f; // Raindrops per second
-    [Tooltip("Cloud height above ground (shadow). Distance between cloud and shadow. J/K adjust this; shadow stays fixed.")]
+    [Header("Visuals")]
+    public GameObject rainPrefab; 
+    public float rainSpawnRate = 10f; 
     public float cloudHeightAboveGround = 5f;
-    [Tooltip("Minimum cloud height above ground (closest to shadow).")]
     public float minCloudHeight = 2f;
-    [Tooltip("Maximum cloud height above ground (farthest from shadow).")]
     public float maxCloudHeight = 12f;
-    [Tooltip("Units per second when holding J/K to change height.")]
     public float heightAdjustSpeed = 4f;
-    public GameObject shadowPrefab; // Optional: A sprite dropping a shadow on the ground
+    public GameObject shadowPrefab; 
 
     [Header("Audio")]
     public AudioClip powerUpSound;
-    public AudioSource rainLoopSource; // Attach an AudioSource for continuous raining
+    public AudioSource rainLoopSource; 
 
-    [Header("Speed Power-up (multipliers)")]
-    [Tooltip("Max speed multiplier while Speed buff is active (e.g. 1.2 = 20% faster).")]
+    [Header("Speed Boost")]
     public float speedBoostMaxSpeedMultiplier = 1.2f;
-    [Tooltip("Acceleration multiplier during Speed buff (e.g. 1.5 = 50% snappier).")]
     public float speedBoostAccelMultiplier = 1.5f;
-    [Tooltip("Deceleration multiplier during Speed buff. Higher = stops faster when releasing input, less inertia (e.g. 4.0 = 4x faster braking).")]
     public float speedBoostDecelMultiplier = 4.0f;
 
     private float baseMaxSpeed;
@@ -65,7 +50,6 @@ public class CloudController : MonoBehaviour
     private float currentGroundY = float.MinValue; 
     private GameObject currentShadow;
 
-    // Visual feedback & audio internals
     private Coroutine rainFadeCoroutine;
     private float defaultRainVolume = 1f;
     private float visualBumpMultiplier = 1f;
@@ -83,49 +67,51 @@ public class CloudController : MonoBehaviour
         initialScale = transform.localScale;
         currentSize = maxSize;
         cloudHeightAboveGround = Mathf.Clamp(cloudHeightAboveGround, minCloudHeight, maxCloudHeight);
-        UpdateShadow(); // Calculate ground once at start or every frame if ground height varies
+        UpdateShadow();
 
         if (shadowPrefab != null)
         {
             currentShadow = Instantiate(shadowPrefab, new Vector3(transform.position.x, currentGroundY, 0), Quaternion.identity);
         }
 
-        // Force stop the rain audio loop at the very beginning
-        // This prevents the bug where "Play On Awake" in the Inspector causes it to play automatically at launch
         if (rainLoopSource != null)
         {
-            defaultRainVolume = rainLoopSource.volume; // Cache the designer's inspector volume!
+            defaultRainVolume = rainLoopSource.volume;
             rainLoopSource.Stop();
         }
 
-        Debug.Log("Cloud initialized. Ready to move and rain.");
+        // Debug.Log("Cloud initialized.");
     }
 
     void Update()
     {
-        // Prevent actions when game state is not explicitly set to Playing (e.g. Menu, Paused, GameOver)
         if (GameManager.Instance != null && GameManager.Instance.currentState != GameManager.GameState.Playing)
             return;
 
-        UpdateShadow(); // Keep shadow/ground level updated as we move
+        UpdateShadow();
         HandleMovement();
-        HandleHeightAdjust(); // J/K: move cloud up/down relative to shadow (shadow stays fixed)
+        HandleHeightAdjust(); 
         HandleRain();
     }
 
-    /// <summary>
-    /// Handles 2D movement based on configured control bindings.
-    /// Prevents cloud from moving below the ground level.
-    /// </summary>
     private void HandleMovement()
     {
-        // Read from standard Unity Input Manager (supports Gamepad Thumbsticks & D-Pad, Arrow Keys, WASD)
         float h = Input.GetAxisRaw(horizontalAxis);
         float v = Input.GetAxisRaw(verticalAxis);
         
+        if (h == 0f)
+        {
+            if (Input.GetKey(KeyCode.A)) h = -1f;
+            if (Input.GetKey(KeyCode.D)) h = 1f;
+        }
+        if (v == 0f)
+        {
+            if (Input.GetKey(KeyCode.S)) v = -1f;
+            if (Input.GetKey(KeyCode.W)) v = 1f;
+        }
+
         Vector2 inputVector = new Vector2(h, v);
         
-        // Clamp magnitude to 1 to prevent diagonal speed boost
         if (inputVector.magnitude > 1f)
         {
             inputVector.Normalize();
@@ -133,21 +119,17 @@ public class CloudController : MonoBehaviour
 
         Vector2 targetVelocity = inputVector * maxSpeed;
 
-        // Apply custom inertia/momentum
         if (inputVector != Vector2.zero)
         {
-            // Accelerating
             currentVelocity = Vector2.MoveTowards(currentVelocity, targetVelocity, acceleration * Time.deltaTime);
         }
         else
         {
-            // Decelerating (Braking)
             currentVelocity = Vector2.MoveTowards(currentVelocity, Vector2.zero, deceleration * Time.deltaTime);
         }
 
         transform.position += (Vector3)currentVelocity * Time.deltaTime;
 
-        // Smart Bounds Clamping & Momentum Absorb
         if (GameManager.Instance != null && GameManager.Instance.mapBounds.size != Vector3.zero)
         {
             Bounds bounds = GameManager.Instance.mapBounds;
@@ -160,50 +142,31 @@ public class CloudController : MonoBehaviour
             if (pos.y < bounds.min.y) { pos.y = bounds.min.y; currentVelocity.y = 0; hitWall = true; }
             if (pos.y > bounds.max.y) { pos.y = bounds.max.y; currentVelocity.y = 0; hitWall = true; }
 
-            if (hitWall)
-            {
-                transform.position = pos;
-            }
+            if (hitWall) transform.position = pos;
         }
     }
 
-    /// <summary>
-    /// Handles the raining input, mechanics, and size constraints.
-    /// </summary>
     private void HandleRain()
     {
-        // Check input for starting rain
         if (Input.GetButtonDown(rainButton))
         {
-            if (currentSize > minSize)
-            {
-                StartRain();
-            }
-            else
-            {
-                Debug.Log("Cloud is too small to start raining!");
-            }
+            if (currentSize > minSize) StartRain();
+            // else Debug.Log("Cloud too small!");
         }
         
-        // Check input for stopping rain
-        if (Input.GetButtonUp(rainButton) && isRaining)
-        {
-            StopRain();
-        }
+        if (Input.GetButtonUp(rainButton) && isRaining) StopRain();
 
-        // Handle raining logic over time
         if (isRaining)
         {
             currentSize -= rainCostPerSecond * Time.deltaTime;
             currentSize = Mathf.Max(currentSize, minSize);
             
             UpdateVisuals();
-            SpawnRainEffect(); // Called every frame while raining
+            SpawnRainEffect(); 
 
-            // Automatically stop if we hit the minimum size
             if (currentSize <= minSize)
             {
-                Debug.Log("Cloud reached minimum size. Raining stopped forcibly.");
+                // Debug.Log("Raining stopped forcibly.");
                 StopRain();
             }
         }
@@ -212,46 +175,35 @@ public class CloudController : MonoBehaviour
     private void StartRain()
     {
         isRaining = true;
-        Debug.Log("Started raining.");
+        // Debug.Log("Started raining.");
         
         if (rainLoopSource != null)
         {
-            // If it was currently fading out from a recent stop, cancel the fade-out instantly
             if (rainFadeCoroutine != null)
             {
                 StopCoroutine(rainFadeCoroutine);
                 rainFadeCoroutine = null;
             }
             
-            // Snap volume immediately back to full
             rainLoopSource.volume = defaultRainVolume;
-            
-            if (!rainLoopSource.isPlaying)
-            {
-                rainLoopSource.Play();
-            }
+            if (!rainLoopSource.isPlaying) rainLoopSource.Play();
         }
     }
 
     private void StopRain()
     {
         isRaining = false;
-        Debug.Log("Stopped raining.");
+        // Debug.Log("Stopped raining.");
         
         if (rainLoopSource != null && rainLoopSource.gameObject.activeInHierarchy)
         {
-            if (rainFadeCoroutine != null)
-            {
-                StopCoroutine(rainFadeCoroutine);
-            }
-            // Trigger the smooth fade out instead of an abrupt .Stop()
+            if (rainFadeCoroutine != null) StopCoroutine(rainFadeCoroutine);
             rainFadeCoroutine = StartCoroutine(FadeOutRainAudio());
         }
     }
 
     private System.Collections.IEnumerator FadeOutRainAudio()
     {
-        // 0.5 seconds of fast, elegant fade-out
         float fadeDuration = 0.5f;
         float startVol = rainLoopSource.volume;
         float t = 0f;
@@ -266,7 +218,6 @@ public class CloudController : MonoBehaviour
 
         if (rainLoopSource != null)
         {
-            // Fully stop and prepare for next start
             rainLoopSource.Stop();
             rainLoopSource.volume = defaultRainVolume;
         }
@@ -274,16 +225,11 @@ public class CloudController : MonoBehaviour
         rainFadeCoroutine = null;
     }
 
-    /// <summary>
-    /// Updates the size of the cloud and its rain width based on currentSize.
-    /// </summary>
     private void UpdateVisuals()
     {
-        // Scale the cloud texture/transform proportionally to its current size, multiplied by bump feedback
         float scaleMultiplier = (currentSize / maxSize) * visualBumpMultiplier;
         transform.localScale = initialScale * scaleMultiplier;
         
-        // Shadow visual scaling (using stable base size, excluding bump bounce)
         if (currentShadow != null)
         {
             float stableMultiplier = currentSize / maxSize;
@@ -291,13 +237,9 @@ public class CloudController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Adjusts cloud height above ground with J/K. Shadow stays fixed; only the cloud moves vertically.
-    /// </summary>
     private void HandleHeightAdjust()
     {
         float delta = heightAdjustSpeed * Time.deltaTime;
-        
         bool isLowering = false;
         bool isRaising = false;
         
@@ -308,7 +250,6 @@ public class CloudController : MonoBehaviour
         } 
         catch 
         { 
-            // Fallback to old Keys if Input Manager is not configured yet
             isLowering = Input.GetKey(KeyCode.J);
             isRaising = Input.GetKey(KeyCode.K);
         }
@@ -317,36 +258,25 @@ public class CloudController : MonoBehaviour
         {
             cloudHeightAboveGround -= delta;
             cloudHeightAboveGround = Mathf.Max(cloudHeightAboveGround, minCloudHeight);
-            // Move cloud down so it gets closer to shadow; shadow Y (currentGroundY) unchanged
             transform.position = new Vector3(transform.position.x, currentGroundY + cloudHeightAboveGround, transform.position.z);
         }
         if (isRaising)
         {
             cloudHeightAboveGround += delta;
             cloudHeightAboveGround = Mathf.Min(cloudHeightAboveGround, maxCloudHeight);
-            // Move cloud up; shadow Y (currentGroundY) unchanged
             transform.position = new Vector3(transform.position.x, currentGroundY + cloudHeightAboveGround, transform.position.z);
         }
     }
 
-    /// <summary>
-    /// Updates the shadow projection based on cloud height above ground (2.5D fixed altitude).
-    /// Shadow sits at cloud Y minus cloudHeightAboveGround.
-    /// </summary>
     private void UpdateShadow()
     {
-        // In 2.5D top-down view, "ground" is the shadow plane. Keep shadow at fixed visual offset below cloud.
         currentGroundY = transform.position.y - cloudHeightAboveGround;
-
         if (currentShadow != null)
         {
             currentShadow.transform.position = new Vector3(transform.position.x, currentGroundY, 0);
         }
     }
 
-    /// <summary>
-    /// Interface for spawning rain prefabs (e.g., individual raindrops) or updating a rain particle system.
-    /// </summary>
     private void SpawnRainEffect()
     {
         if (rainPrefab == null) return;
@@ -354,39 +284,25 @@ public class CloudController : MonoBehaviour
         if (Time.time >= nextRainSpawnTime)
         {
             float sizeRatio = currentSize / maxSize;
-            // Calculate spawn position (could randomize x based on cloud width)
             float rainWidth = (initialScale.x * sizeRatio) / 2f;
-            
-            // The larger the cloud, the more raindrops fall simultaneously per tick (1 to 4 drops)
             int dropsToSpawn = Mathf.Max(1, Mathf.RoundToInt(sizeRatio * 4f));
 
             for (int i = 0; i < dropsToSpawn; i++)
             {
                 float randomX = Random.Range(-rainWidth, rainWidth);
                 Vector3 spawnPos = transform.position + new Vector3(randomX, -0.5f, 0);
-
                 GameObject raindropObj = Instantiate(rainPrefab, spawnPos, Quaternion.identity);
-                
-                // If the raindrop has our script, tell it where the ground is for the 2.5D effect
                 Raindrop dropScript = raindropObj.GetComponent<Raindrop>();
-                if (dropScript != null)
-                {
-                    dropScript.SetTargetGroundY(currentGroundY);
-                }
+                if (dropScript != null) dropScript.SetTargetGroundY(currentGroundY);
             }
 
             nextRainSpawnTime = Time.time + (1f / rainSpawnRate);
         }
     }
 
-    /// <summary>
-    /// Interface for picking up power-ups (e.g., restoring water/size, modifying speed).
-    /// </summary>
-    /// <param name="powerUpType">A string identifier for the power-up type.</param>
-    /// <param name="amount">The value associated with the power-up.</param>
     public void CollectPowerUp(string powerUpType, float amount)
     {
-        Debug.Log($"Collected power-up: {powerUpType} ({amount})");
+        // Debug.Log($"Collected: {powerUpType}");
         
         if (AudioManager.Instance != null && powerUpSound != null)
         {
@@ -404,43 +320,31 @@ public class CloudController : MonoBehaviour
                 break;
             case "Speed":
                 speedBoostEndTime = Time.time + amount;
-                if (speedBoostCoroutine == null)
-                {
-                    speedBoostCoroutine = StartCoroutine(SpeedBoostRoutine());
-                }
+                if (speedBoostCoroutine == null) speedBoostCoroutine = StartCoroutine(SpeedBoostRoutine());
                 break;
             case "DarkCloud":
-                maxSize += amount; // Increases maximum rain capacity
-                currentSize += amount; // Dark cloud immediately gives weather boost
+                maxSize += amount; 
+                currentSize += amount; 
                 UpdateVisuals();
                 break;
-            // Leave open for new features
             default:
-                Debug.LogWarning($"Unknown power-up type: {powerUpType}");
+                // Debug.LogWarning($"Unknown power-up: {powerUpType}");
                 break;
         }
     }
 
-    /// <summary>
-    /// Future interface: Custom feature extension point.
-    /// Can be used for environmental interactions (e.g., wind blow).
-    /// </summary>
     public void ApplyEnvironmentalEffect(Vector2 force)
     {
-        Debug.Log($"Applied environmental force: {force}");
-        // TODO: Add external forces to movement or shape
+        // Debug.Log($"Force applied: {force}");
     }
 
-    // --- Feedback & Power-up Coroutines ---
-    
     private System.Collections.IEnumerator CollectionBumpRoutine()
     {
         float t = 0f;
-        float duration = 0.3f; // Fast elastic bump
+        float duration = 0.3f; 
         while (t < duration)
         {
             t += Time.deltaTime;
-            // Creates a bounce multiplier going 1.0 -> 1.3 -> 1.0
             visualBumpMultiplier = 1f + Mathf.Sin((t / duration) * Mathf.PI) * 0.3f;
             UpdateVisuals();
             yield return null;
@@ -451,7 +355,6 @@ public class CloudController : MonoBehaviour
 
     private System.Collections.IEnumerator SpeedBoostRoutine()
     {
-        // Apply configurable boost (reduced from previous 1.5x speed, 4x accel)
         maxSpeed = baseMaxSpeed * speedBoostMaxSpeedMultiplier;
         acceleration = baseAcceleration * speedBoostAccelMultiplier;
         deceleration = baseDeceleration * speedBoostDecelMultiplier; 
@@ -460,23 +363,20 @@ public class CloudController : MonoBehaviour
 
         while (Time.time < speedBoostEndTime)
         {
-            // Flashing glow effect ping-ponging between white and a bright energetic cyan
             if (cloudSprite != null)
             {
                 float flash = Mathf.PingPong(Time.time * 10f, 1f);
-                cloudSprite.color = Color.Lerp(Color.white, new Color(1f, 0.9f, 0.015f), flash);//Yellow
+                cloudSprite.color = Color.Lerp(Color.white, new Color(1f, 0.9f, 0.015f), flash);
             }
             yield return null;
         }
 
-        // Restore handling attributes natively upon expiration
         maxSpeed = baseMaxSpeed;
         acceleration = baseAcceleration;
         deceleration = baseDeceleration;
         if (cloudSprite != null) cloudSprite.color = Color.white;
         
         if (AudioManager.Instance != null) AudioManager.Instance.SetSpeedBGMState(false);
-        
         speedBoostCoroutine = null;
     }
 }

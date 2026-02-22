@@ -5,16 +5,16 @@ public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
 
-    [Header("Audio Mixer (For Sliders)")]
-    [Tooltip("Expose parameters 'BgmVolume' and 'SfxVolume' in the mixer")]
+    [Header("Audio Mixer")]
+    [Tooltip("Expose parameters 'BgmVolume' and 'SfxVolume'")]
     public AudioMixer masterMixer;
 
     [Header("Global Audio Sources")]
-    [Tooltip("Used to play looping Background Music")]
+    [Tooltip("Looping BGM")]
     public AudioSource musicSource;
-    private AudioSource secondaryMusicSource; // Created automatically at runtime for crossfading
+    private AudioSource secondaryMusicSource;
     
-    [Tooltip("Used to play OneShot SFX (like UI clicks)")]
+    [Tooltip("OneShot SFX")]
     public AudioSource sfxSource;
     
     private Coroutine crossfadeRoutine;
@@ -23,12 +23,12 @@ public class AudioManager : MonoBehaviour
     [Header("BGM Clips")]
     public AudioClip titleBGM;
     public AudioClip gameBGM;
-    [Tooltip("Seamlessly replaces gameBGM during speed power-ups")]
+    [Tooltip("Seamless variety during speed power-ups")]
     public AudioClip speedBGM;
     public AudioClip gameOverBGM;
 
     [Header("Game Over Sequencing")]
-    [Tooltip("Plays immediately on death. The Game Over BGM will automatically wait for this to finish before looping.")]
+    [Tooltip("Plays immediately on death.")]
     public AudioClip gameOverSFX;
 
     [Header("UI SFX")]
@@ -43,9 +43,8 @@ public class AudioManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Keep audio playing across scenes
+            DontDestroyOnLoad(gameObject);
             
-            // Create a secondary music source to handle crossfading
             if (musicSource != null)
             {
                 defaultBgmVolume = musicSource.volume;
@@ -64,7 +63,6 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
-        // Apply saved volumes on start
         SetBgmVolume(PlayerPrefs.GetFloat(BGM_VOL_KEY, 0.75f));
         SetSfxVolume(PlayerPrefs.GetFloat(SFX_VOL_KEY, 0.75f));
     }
@@ -74,10 +72,7 @@ public class AudioManager : MonoBehaviour
         CrossfadeTo(clip, false);
     }
 
-    /// <summary>
-    /// Swaps the current playing music with a variation, syncing to the exact same second/beat of the track, WITH crossfade.
-    /// Perfect for dynamic music layers like getting a PowerUp!
-    /// </summary>
+    // Swaps music variation with crossfade, syncing time if needed.
     public void PlayMusicSynced(AudioClip newClip)
     {
         CrossfadeTo(newClip, true);
@@ -87,7 +82,6 @@ public class AudioManager : MonoBehaviour
     {
         if (musicSource == null || newClip == null) return;
 
-        // Determine which source is currently playing at full volume
         AudioSource activeSource = (musicSource.volume > 0.01f) ? musicSource : secondaryMusicSource;
         if (activeSource == null) activeSource = musicSource;
 
@@ -107,7 +101,7 @@ public class AudioManager : MonoBehaviour
         }
         else
         {
-            fadingIn.time = 0f; // Start over if not synced
+            fadingIn.time = 0f;
         }
 
         if (crossfadeRoutine != null) StopCoroutine(crossfadeRoutine);
@@ -121,7 +115,7 @@ public class AudioManager : MonoBehaviour
 
         while (t < duration)
         {
-            t += Time.unscaledDeltaTime; // Unscaled so we can still crossfade when timeScale = 0 (like paused)
+            t += Time.unscaledDeltaTime;
             fadeOut.volume = Mathf.Lerp(startVolOut, 0f, t / duration);
             fadeIn.volume = Mathf.Lerp(0f, defaultBgmVolume, t / duration);
             yield return null;
@@ -132,12 +126,9 @@ public class AudioManager : MonoBehaviour
         fadeIn.volume = defaultBgmVolume;
     }
 
-    /// <summary>
-    /// Called by CloudController to enter/exit the dynamic speed variation.
-    /// </summary>
+    // Called by CloudController to enter/exit speed variation.
     public void SetSpeedBGMState(bool isSpeeding)
     {
-        // Don't switch if we're dead/in-menu
         if (GameManager.Instance != null && GameManager.Instance.currentState != GameManager.GameState.Playing) return;
 
         AudioClip targetClip = isSpeeding ? speedBGM : gameBGM;
@@ -147,21 +138,18 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Plays the Game Over failure stinger immediately, then waits for it to finish before fading in/playing the Game Over BGM.
-    /// Runs in unscaled time since the game is paused.
-    /// </summary>
+    // Plays game over sequence stinger followed by BGM.
     public void PlayGameOverSequence()
     {
         if (musicSource != null) musicSource.Stop();
-        if (secondaryMusicSource != null) secondaryMusicSource.Stop(); // Cut all BGMs immediately
+        if (secondaryMusicSource != null) secondaryMusicSource.Stop();
         
         float delay = 0f;
         if (sfxSource != null && gameOverSFX != null)
         {
             sfxSource.pitch = 1f;
             sfxSource.PlayOneShot(gameOverSFX);
-            delay = gameOverSFX.length; // Calculate exactly how long the death sound is
+            delay = gameOverSFX.length;
         }
 
         if (gameOverBGM != null)
@@ -172,7 +160,6 @@ public class AudioManager : MonoBehaviour
 
     private System.Collections.IEnumerator PlayBGMAfterDelay(AudioClip clip, float delay)
     {
-        // Use Realtime so the delay works perfectly even when Time.timeScale = 0
         yield return new WaitForSecondsRealtime(delay);
         PlayMusic(clip);
     }
@@ -180,13 +167,11 @@ public class AudioManager : MonoBehaviour
     public void PlaySFX(AudioClip clip)
     {
         if (sfxSource == null || clip == null) return;
-        sfxSource.pitch = 1f; // Reset pitch to normal for standard sounds
+        sfxSource.pitch = 1f;
         sfxSource.PlayOneShot(clip);
     }
 
-    /// <summary>
-    /// Plays an SFX with a randomized pitch to prevent repetitive sounds (e.g., raindrops, footsteps).
-    /// </summary>
+    // Plays SFX with randomized pitch.
     public void PlaySFXRandomPitch(AudioClip clip, float minPitch = 0.85f, float maxPitch = 1.15f)
     {
         if (sfxSource == null || clip == null) return;
@@ -195,7 +180,6 @@ public class AudioManager : MonoBehaviour
         sfxSource.PlayOneShot(clip);
     }
 
-    // --- Volume Controls for sliders (Value 0.0001 to 1) ---
     public void SetBgmVolume(float sliderValue)
     {
         sliderValue = Mathf.Clamp(sliderValue, 0.0001f, 1f);
@@ -203,7 +187,6 @@ public class AudioManager : MonoBehaviour
         
         if (masterMixer != null)
         {
-            // Convert linear slider 0-1 to logarithmic dB (-80 to 0)
             float db = Mathf.Log10(sliderValue) * 20f;
             masterMixer.SetFloat("BgmVolume", db);
         }
@@ -221,11 +204,10 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // --- Specific UI Hooks ---
     public void PlayUIButton() 
     { 
         if (buttonClickSFX != null) PlaySFX(buttonClickSFX); 
-        else Debug.LogWarning("[AudioManager] No Button Click SFX assigned in Inspector!");
+        // else Debug.LogWarning("[AudioManager] No Button Click SFX assigned in Inspector!");
     }
     public void PlayPause() { PlaySFX(pauseSFX); }
 }

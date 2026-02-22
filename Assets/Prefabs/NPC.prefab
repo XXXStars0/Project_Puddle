@@ -190,7 +190,7 @@ MonoBehaviour:
   runSpeed: 4
   rainMoodPenalty: -25
   puddleMoodBonus: 20
-  puddleShrinkAmount: 2
+  puddleShrinkAmount: 1
   puddleDetectionRadius: 3
   puddleLayer:
     serializedVersion: 2

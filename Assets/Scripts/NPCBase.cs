@@ -1,41 +1,36 @@
 using UnityEngine;
 
-/// <summary>
-/// Base class for NPCs. Handles wandering, getting rained on, stepping in puddles, and leaving the map.
-/// Can be inherited by specific NPC variants (e.g. FastNPC, WaterLovingNPC).
-/// </summary>
 public class NPCBase : MonoBehaviour
 {
-    [Header("Movement Settings")]
+    [Header("Movement")]
     public float walkSpeed = 2f;
     public float runSpeed = 4f;
 
-    [Header("Mood Impact")]
+    [Header("Mood")]
     public float rainMoodPenalty = -10f;
     public float puddleMoodBonus = 15f;
     
-    [Header("Interactions & AI")]
-    public float puddleShrinkAmount = 1.5f; // How much puddle size is consumed when stepped on
-    public float puddleDetectionRadius = 4f; // Radius to look for puddles
-    public LayerMask puddleLayer; // Optional: restrict detection to a specific layer
+    [Header("AI")]
+    public float puddleShrinkAmount = 0.5f; 
+    public float puddleDetectionRadius = 4f; 
+    public LayerMask puddleLayer; 
 
-    [Header("Emotion Bubbles")]
-    public GameObject bubbleFoundPuddle; // Triggered when finding puddle
-    public GameObject bubbleHappy; // Triggered when satisfied
-    public GameObject bubbleSad; // Triggered when rained on
+    [Header("Bubbles")]
+    public GameObject bubbleFoundPuddle; 
+    public GameObject bubbleHappy; 
+    public GameObject bubbleSad; 
 
-    [Header("Emotion Audio")]
+    [Header("Audio")]
     public AudioClip soundFoundPuddle;
     public AudioClip soundHappy;
     public AudioClip soundSad;
-    public AudioClip puddleSplashSound; // Plays when touching water
+    public AudioClip puddleSplashSound; 
 
-    [Header("Animation & Visuals")]
-    [Tooltip("Uses custom 2-frame sprite swapping if assigned.")]
+    [Header("Visuals")]
     public SpriteRenderer mainSpriteRenderer;
-    public GameObject puddleSplashPrefab; // Instantiated when stepping in water
-    public Sprite[] walkSprites; // child_idle, child_walk
-    public Sprite[] jumpSprites; // child_crouch, child_jump
+    public GameObject puddleSplashPrefab; 
+    public Sprite[] walkSprites; 
+    public Sprite[] jumpSprites; 
     public float walkAnimSpeed = 0.25f;
     public float runAnimSpeed = 0.12f;
     public float jumpAnimSpeed = 0.3f;
@@ -44,11 +39,9 @@ public class NPCBase : MonoBehaviour
     private int currentFrame = 0;
 
     public Animator anim;
-    [Tooltip("If no animator is assigned, this sprite will simply bounce up and down when playing in water.")]
     public Transform spriteVisual;
-    public float playTime = 1.0f; // How long they play in the water before leaving
+    public float playTime = 1.0f; 
     
-    // Animation triggers
     public string animParamIsRunning = "IsRunning";
     public string animTriggerFoundPuddle = "FoundPuddle";
     public string animTriggerPlayWater = "PlayWater";
@@ -63,13 +56,11 @@ public class NPCBase : MonoBehaviour
 
     protected virtual void Start()
     {
-        // Register spawn with GameManager for scoring
         if (GameManager.Instance != null)
         {
             GameManager.Instance.RegisterNPCSpawn();
         }
 
-        // Ensure NPC has a Kinematic Rigidbody2D so triggers (Puddles/Rain) can accurately fire
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb == null)
         {
@@ -77,10 +68,7 @@ public class NPCBase : MonoBehaviour
         }
         rb.isKinematic = true;
 
-        // Hide all bubbles initially
         ShowBubble(null);
-
-        // Pick the first random spot to wander to
         PickNewWanderTarget();
     }
 
@@ -100,11 +88,10 @@ public class NPCBase : MonoBehaviour
 
     protected virtual void Update()
     {
-        // Safety culling: if NPC wanders too far off map, destroy it
         if (GameManager.Instance != null && GameManager.Instance.mapBounds.size != Vector3.zero)
         {
             Bounds cullBounds = GameManager.Instance.mapBounds;
-            cullBounds.Expand(10f); // 5 units of padding on all sides before wiping memory
+            cullBounds.Expand(10f); 
             if (!cullBounds.Contains(transform.position))
             {
                 Destroy(gameObject);
@@ -119,7 +106,6 @@ public class NPCBase : MonoBehaviour
                 break;
             case NPCState.Searching:
             case NPCState.PlayingInWater:
-                // Stand still while searching or playing animation/routine
                 break;
             case NPCState.Fleeing:
             case NPCState.Satisfied:
@@ -145,8 +131,8 @@ public class NPCBase : MonoBehaviour
                 currentArray = walkSprites;
                 break;
             case NPCState.Searching:
-                currentSpeed = walkAnimSpeed * 2f; // Slower or custom frame speed when surprised
-                currentArray = walkSprites; // Or use jumpSprites if jumping in surprise
+                currentSpeed = walkAnimSpeed * 2f; 
+                currentArray = walkSprites; 
                 break;
             case NPCState.PlayingInWater:
                 currentSpeed = jumpAnimSpeed;
@@ -154,7 +140,7 @@ public class NPCBase : MonoBehaviour
                 break;
             case NPCState.Fleeing:
             case NPCState.Satisfied:
-                currentSpeed = runAnimSpeed; // Fast playback
+                currentSpeed = runAnimSpeed; 
                 currentArray = walkSprites;
                 break;
         }
@@ -169,36 +155,36 @@ public class NPCBase : MonoBehaviour
             }
         }
 
-        base.transform.position = transform.position; // redundant safeguard
-        
-        // Flip sprite based on movement direction (assuming source material defaults to facing LEFT)
         if (currentState != NPCState.PlayingInWater)
         {
-            if (targetPosition.x > transform.position.x + 0.05f) mainSpriteRenderer.flipX = true;  // moving right
-            else if (targetPosition.x < transform.position.x - 0.05f) mainSpriteRenderer.flipX = false; // moving left
+            if (targetPosition.x > transform.position.x + 0.05f) mainSpriteRenderer.flipX = true;  
+            else if (targetPosition.x < transform.position.x - 0.05f) mainSpriteRenderer.flipX = false; 
         }
     }
 
     protected virtual void Wander()
     {
-        // Periodically check for puddles if we don't have one
+        if (targetPuddle != null)
+        {
+            if (!targetPuddle.gameObject.activeInHierarchy || targetPuddle.currentSize <= 0)
+            {
+                targetPuddle = null;
+                ShowBubble(null); 
+                PickNewWanderTarget();
+            }
+        }
+
         if (targetPuddle == null)
         {
+            if (bubbleFoundPuddle != null && bubbleFoundPuddle.activeSelf)
+            {
+                ShowBubble(null);
+            }
             FindNearbyPuddle();
         }
         else
         {
-            // Puddle might have dried up while walking
-            if (!targetPuddle.gameObject.activeInHierarchy || targetPuddle.currentSize <= 0)
-            {
-                targetPuddle = null;
-                ShowBubble(null); // Lost puddle, hide exclamation mark
-                PickNewWanderTarget();
-            }
-            else
-            {
-                targetPosition = targetPuddle.transform.position;
-            }
+            targetPosition = targetPuddle.transform.position;
         }
 
         transform.position = Vector3.MoveTowards(transform.position, targetPosition, walkSpeed * Time.deltaTime);
@@ -207,7 +193,6 @@ public class NPCBase : MonoBehaviour
         {
             if (targetPuddle != null)
             {
-                // Reached the puddle manually (in case trigger physics didn't fire)
                 StepInPuddle(targetPuddle);
                 targetPuddle = null;
             }
@@ -220,7 +205,6 @@ public class NPCBase : MonoBehaviour
 
     protected virtual void FindNearbyPuddle()
     {
-        // Removed LayerMask limitation to avoid Inspector misconfiguration where Puddle is on default layer but mask isn't set.
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, puddleDetectionRadius);
         float closestDist = float.MaxValue;
         Puddle closestPuddle = null;
@@ -241,11 +225,10 @@ public class NPCBase : MonoBehaviour
 
         if (closestPuddle != null)
         {
-            if (targetPuddle != closestPuddle) // Just found a new puddle!
+            if (targetPuddle != closestPuddle) 
             {
                 targetPuddle = closestPuddle;
                 targetPosition = targetPuddle.transform.position;
-                
                 StartCoroutine(ReactToPuddleRoutine());
             }
         }
@@ -253,27 +236,39 @@ public class NPCBase : MonoBehaviour
 
     private System.Collections.IEnumerator ReactToPuddleRoutine()
     {
-        currentState = NPCState.Searching; // Pause movement immediately
+        currentState = NPCState.Searching; 
         ShowBubble(bubbleFoundPuddle);
         if (anim != null) anim.SetTrigger(animTriggerFoundPuddle);
         
-        // Wait briefly for the "!" animation and sound to register clearly (0.6 seconds)
-        yield return new WaitForSeconds(0.6f);
+        float timer = 0f;
+        while (timer < 0.6f)
+        {
+            if (targetPuddle == null || !targetPuddle.gameObject.activeInHierarchy || targetPuddle.currentSize <= 0)
+            {
+                break;
+            }
+            timer += Time.deltaTime;
+            yield return null;
+        }
         
-        // If they didn't get rained on in the meantime, resume walking towards it
         if (currentState == NPCState.Searching)
         {
             currentState = NPCState.Wandering; 
+            if (targetPuddle == null || !targetPuddle.gameObject.activeInHierarchy || targetPuddle.currentSize <= 0)
+            {
+                targetPuddle = null;
+                ShowBubble(null);
+                PickNewWanderTarget();
+            }
         }
     }
 
     protected virtual void RunOffMap()
     {
         transform.position = Vector3.MoveTowards(transform.position, targetPosition, runSpeed * Time.deltaTime);
-        
         if (Vector2.Distance(transform.position, targetPosition) < 0.1f)
         {
-            Debug.Log($"{gameObject.name} left the map limits and vanished.");
+            // Debug.Log($"{gameObject.name} left.");
             Destroy(gameObject);
         }
     }
@@ -291,23 +286,19 @@ public class NPCBase : MonoBehaviour
     {
         if (GameManager.Instance == null) return;
         Bounds bounds = GameManager.Instance.mapBounds;
-        // Find nearest horizontal edge to run away
         float dirX = transform.position.x > 0 ? bounds.max.x + 5f : bounds.min.x - 5f;
         targetPosition = new Vector2(dirX, transform.position.y);
     }
 
     protected virtual void OnTriggerEnter2D(Collider2D collision)
     {
-        // Ignore interactions if we are already leaving
         if (currentState != NPCState.Wandering) return;
 
-        // 1. Got hit by a falling raindrop
         if (collision.GetComponent<Raindrop>() != null)
         {
             GetWet();
         }
         
-        // 2. Stepped on a puddle
         Puddle puddle = collision.GetComponent<Puddle>();
         if (puddle != null)
         {
@@ -317,9 +308,8 @@ public class NPCBase : MonoBehaviour
 
     protected virtual void GetWet()
     {
-        Debug.Log($"{gameObject.name} was rained on! Global mood penalties applied.");
+        // Debug.Log($"{gameObject.name} wet.");
         currentState = NPCState.Fleeing;
-        
         ShowBubble(bubbleSad);
         if (anim != null)
         {
@@ -337,13 +327,11 @@ public class NPCBase : MonoBehaviour
     {
         if (currentState == NPCState.PlayingInWater || currentState == NPCState.Satisfied || currentState == NPCState.Fleeing) return;
 
-        Debug.Log($"{gameObject.name} splashed in a puddle! Feeling satisfied.");
+        // Debug.Log($"{gameObject.name} splash.");
         currentState = NPCState.PlayingInWater;
         
-        // Shrink puddle
         puddle.ModifySize(-puddleShrinkAmount);
 
-        // Boost global mood and register satisfied score
         if (GameManager.Instance != null)
         {
             GameManager.Instance.ModifyMood(puddleMoodBonus);
@@ -371,7 +359,6 @@ public class NPCBase : MonoBehaviour
         float timer = 0f;
         Vector3 origPos = spriteVisual != null ? spriteVisual.localPosition : Vector3.zero;
 
-        // Manual bounce effect if no animator
         while (timer < playTime)
         {
             timer += Time.deltaTime;
@@ -383,13 +370,11 @@ public class NPCBase : MonoBehaviour
             yield return null;
         }
 
-        // Reset visual position
         if (anim == null && spriteVisual != null)
         {
             spriteVisual.localPosition = origPos;
         }
 
-        // Ready to leave
         if (anim != null) 
         {
             anim.SetBool(animParamIsRunning, false);
@@ -402,8 +387,7 @@ public class NPCBase : MonoBehaviour
 
     protected virtual void OnDrawGizmosSelected()
     {
-        // Visualize the puddle detection radius in the Editor
-        Gizmos.color = new Color(0f, 1f, 1f, 0.3f); // Cyan with some transparency
+        Gizmos.color = new Color(0f, 1f, 1f, 0.3f); 
         Gizmos.DrawWireSphere(transform.position, puddleDetectionRadius);
     }
 }
