@@ -91,6 +91,13 @@ public class Raindrop : MonoBehaviour
     /// </summary>
     private void OnTriggerEnter2D(Collider2D other)
     {
+        // Prevent raindrop from immediately destroying itself if it spawns inside the Cloud collider!
+        if (other.GetComponentInParent<CloudController>() != null) return;
+        
+        // Prevent raindrops from colliding with each other or with powerups
+        if (other.GetComponent<Raindrop>() != null) return;
+        if (other.GetComponent<PowerUp>() != null) return;
+
         // 1. If we hit an existing puddle directly (enlarge it instead of spawning a new one)
         Puddle puddle = other.GetComponent<Puddle>();
         if (puddle != null)
@@ -104,14 +111,10 @@ public class Raindrop : MonoBehaviour
             return;
         }
 
-        // 2. If we hit an object that belongs to the Ground layer
-        if (other.gameObject.layer == LayerMask.NameToLayer("Ground") || other.CompareTag("Ground"))
-        {
-            OnHitGround();
-            return;
-        }
+        // 2. [REMOVED] Background 'Ground' triggers are ignored because the entire screen is technically the ground.
+        // Instead, the raindrop relies entirely on HandleFall() checking the targetGroundY passed from the Cloud's shadow!
 
-        // If we hit an NPC
+        // 3. If we hit an NPC
         if (other.gameObject.layer == LayerMask.NameToLayer("NPC") || other.CompareTag("NPC"))
         {
             // Spawn splash effect on the NPC but NO puddle
@@ -125,8 +128,8 @@ public class Raindrop : MonoBehaviour
             return;
         }
 
-        // Destroy upon hitting anything else to prevent lingering colliders
-        DestroyRaindrop();
+        // Fallback: don't randomly destroy unless it explicitly hits a wall/obstacle
+        // We removed the generic Destroy() here so it doesn't vanish on invisible triggers
     }
 
     /// <summary>
