@@ -124,21 +124,27 @@ public class EntitySpawner : MonoBehaviour
         if (GameManager.Instance == null) return;
         Bounds bounds = GameManager.Instance.mapBounds;
 
-        // Assumes index 0 is Water, others are different powerups. 
-        // 75% chance to drop Water, 25% chance to drop others like Speed.
-        int prefabIndex = 0;
-        if (powerUpPrefabs.Count > 1)
+        // Spawn 1 to 3 powerups simultaneously (majority will be Water based on the 75% logic below)
+        int dropsToSpawn = Random.Range(1, 4);
+
+        for (int i = 0; i < dropsToSpawn; i++)
         {
-            prefabIndex = Random.value <= 0.75f ? 0 : Random.Range(1, powerUpPrefabs.Count);
+            // Assumes index 0 is Water, others are different powerups. 
+            // 75% chance to drop Water, 25% chance to drop others like Speed.
+            int prefabIndex = 0;
+            if (powerUpPrefabs.Count > 1)
+            {
+                prefabIndex = Random.value <= 0.75f ? 0 : Random.Range(1, powerUpPrefabs.Count);
+            }
+
+            GameObject prefab = powerUpPrefabs[prefabIndex];
+            
+            // Spawn strictly inside the map
+            float rx = Random.Range(bounds.min.x + 1f, bounds.max.x - 1f);
+            float ry = Random.Range(bounds.min.y + 1f, bounds.max.y - 1f);
+            Vector3 spawnPos = new Vector3(rx, ry, 0f);
+
+            Instantiate(prefab, spawnPos, Quaternion.identity);
         }
-
-        GameObject prefab = powerUpPrefabs[prefabIndex];
-        
-        // Spawn strictly inside the map
-        float rx = Random.Range(bounds.min.x + 1f, bounds.max.x - 1f);
-        float ry = Random.Range(bounds.min.y + 1f, bounds.max.y - 1f);
-        Vector3 spawnPos = new Vector3(rx, ry, 0f);
-
-        Instantiate(prefab, spawnPos, Quaternion.identity);
     }
 }

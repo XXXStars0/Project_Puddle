@@ -24,7 +24,24 @@ public class NPCBase : MonoBehaviour
     public GameObject bubbleHappy; // Triggered when satisfied
     public GameObject bubbleSad; // Triggered when rained on
 
+    [Header("Emotion Audio")]
+    public AudioClip soundFoundPuddle;
+    public AudioClip soundHappy;
+    public AudioClip soundSad;
+    public AudioClip puddleSplashSound; // Plays when touching water
+
     [Header("Animation & Visuals")]
+    [Tooltip("Uses custom 2-frame sprite swapping if assigned.")]
+    public SpriteRenderer mainSpriteRenderer;
+    public Sprite[] walkSprites; // child_idle, child_walk
+    public Sprite[] jumpSprites; // child_crouch, child_jump
+    public float walkAnimSpeed = 0.25f;
+    public float runAnimSpeed = 0.12f;
+    public float jumpAnimSpeed = 0.3f;
+    
+    private float animTimer = 0f;
+    private int currentFrame = 0;
+
     public Animator anim;
     [Tooltip("If no animator is assigned, this sprite will simply bounce up and down when playing in water.")]
     public Transform spriteVisual;
@@ -71,6 +88,13 @@ public class NPCBase : MonoBehaviour
         if (bubbleFoundPuddle != null) bubbleFoundPuddle.SetActive(bubbleFoundPuddle == activeBubble);
         if (bubbleHappy != null) bubbleHappy.SetActive(bubbleHappy == activeBubble);
         if (bubbleSad != null) bubbleSad.SetActive(bubbleSad == activeBubble);
+
+        if (AudioManager.Instance != null && activeBubble != null)
+        {
+            if (activeBubble == bubbleFoundPuddle && soundFoundPuddle != null) AudioManager.Instance.PlaySFXRandomPitch(soundFoundPuddle);
+            else if (activeBubble == bubbleHappy && soundHappy != null) AudioManager.Instance.PlaySFXRandomPitch(soundHappy);
+            else if (activeBubble == bubbleSad && soundSad != null) AudioManager.Instance.PlaySFXRandomPitch(soundSad);
+        }
     }
 
     protected virtual void Update()
@@ -99,6 +123,53 @@ public class NPCBase : MonoBehaviour
             case NPCState.Satisfied:
                 RunOffMap();
                 break;
+        }
+
+        HandleSpriteAnimation();
+    }
+
+    protected virtual void HandleSpriteAnimation()
+    {
+        if (mainSpriteRenderer == null) return;
+        
+        animTimer += Time.deltaTime;
+        float currentSpeed = walkAnimSpeed;
+        Sprite[] currentArray = walkSprites;
+
+        switch (currentState)
+        {
+            case NPCState.Wandering:
+                currentSpeed = walkAnimSpeed;
+                currentArray = walkSprites;
+                break;
+            case NPCState.PlayingInWater:
+                currentSpeed = jumpAnimSpeed;
+                currentArray = jumpSprites;
+                break;
+            case NPCState.Fleeing:
+            case NPCState.Satisfied:
+                currentSpeed = runAnimSpeed; // Fast playback
+                currentArray = walkSprites;
+                break;
+        }
+
+        if (currentArray != null && currentArray.Length > 0)
+        {
+            if (animTimer >= currentSpeed)
+            {
+                animTimer = 0f;
+                currentFrame = (currentFrame + 1) % currentArray.Length;
+                mainSpriteRenderer.sprite = currentArray[currentFrame];
+            }
+        }
+
+        base.transform.position = transform.position; // redundant safeguard
+        
+        // Flip sprite based on movement direction (assuming source material defaults to facing LEFT)
+        if (currentState != NPCState.PlayingInWater)
+        {
+            if (targetPosition.x > transform.position.x + 0.05f) mainSpriteRenderer.flipX = true;  // moving right
+            else if (targetPosition.x < transform.position.x - 0.05f) mainSpriteRenderer.flipX = false; // moving left
         }
     }
 
@@ -257,6 +328,11 @@ public class NPCBase : MonoBehaviour
             GameManager.Instance.ModifyMood(puddleMoodBonus);
             GameManager.Instance.RegisterNPCSatisfied();
         }
+
+        if (AudioManager.Instance != null && puddleSplashSound != null)
+        {
+            AudioManager.Instance.PlaySFXRandomPitch(puddleSplashSound, 0.85f, 1.15f);
+        }
             
         StartCoroutine(PlayInWaterRoutine());
     }
@@ -296,5 +372,12 @@ public class NPCBase : MonoBehaviour
         
         currentState = NPCState.Satisfied;
         SetEdgeTarget();
+    }
+
+    protected virtual void OnDrawGizmosSelected()
+    {
+        // Visualize the puddle detection radius in the Editor
+        Gizmos.color = new Color(0f, 1f, 1f, 0.3f); // Cyan with some transparency
+        Gizmos.DrawWireSphere(transform.position, puddleDetectionRadius);
     }
 }
