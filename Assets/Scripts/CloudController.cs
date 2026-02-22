@@ -287,18 +287,26 @@ public class CloudController : MonoBehaviour
 
         if (Time.time >= nextRainSpawnTime)
         {
+            float sizeRatio = currentSize / maxSize;
             // Calculate spawn position (could randomize x based on cloud width)
-            float rainWidth = (initialScale.x * (currentSize / maxSize)) / 2f;
-            float randomX = Random.Range(-rainWidth, rainWidth);
-            Vector3 spawnPos = transform.position + new Vector3(randomX, -0.5f, 0);
-
-            GameObject raindropObj = Instantiate(rainPrefab, spawnPos, Quaternion.identity);
+            float rainWidth = (initialScale.x * sizeRatio) / 2f;
             
-            // If the raindrop has our script, tell it where the ground is for the 2.5D effect
-            Raindrop dropScript = raindropObj.GetComponent<Raindrop>();
-            if (dropScript != null)
+            // The larger the cloud, the more raindrops fall simultaneously per tick (1 to 4 drops)
+            int dropsToSpawn = Mathf.Max(1, Mathf.RoundToInt(sizeRatio * 4f));
+
+            for (int i = 0; i < dropsToSpawn; i++)
             {
-                dropScript.SetTargetGroundY(currentGroundY);
+                float randomX = Random.Range(-rainWidth, rainWidth);
+                Vector3 spawnPos = transform.position + new Vector3(randomX, -0.5f, 0);
+
+                GameObject raindropObj = Instantiate(rainPrefab, spawnPos, Quaternion.identity);
+                
+                // If the raindrop has our script, tell it where the ground is for the 2.5D effect
+                Raindrop dropScript = raindropObj.GetComponent<Raindrop>();
+                if (dropScript != null)
+                {
+                    dropScript.SetTargetGroundY(currentGroundY);
+                }
             }
 
             nextRainSpawnTime = Time.time + (1f / rainSpawnRate);
@@ -392,7 +400,7 @@ public class CloudController : MonoBehaviour
             if (cloudSprite != null)
             {
                 float flash = Mathf.PingPong(Time.time * 10f, 1f);
-                cloudSprite.color = Color.Lerp(Color.white, new Color(0.6f, 1f, 1f), flash);
+                cloudSprite.color = Color.Lerp(Color.white, new Color(1f, 0.9f, 0.015f), flash);//Yellow
             }
             yield return null;
         }

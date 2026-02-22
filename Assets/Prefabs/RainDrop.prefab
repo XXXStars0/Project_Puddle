@@ -30,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.843925, y: 0.020158917, z: 0}
-  m_LocalScale: {x: 0.25, y: 0.25, z: 1}
+  m_LocalScale: {x: 0.75, y: 0.75, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -76,7 +76,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 6
-  m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8e213dfcaed23eb43bc4a7f79318321d, type: 3}
   m_Color: {r: 0.5943396, g: 0.92698, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -103,6 +103,8 @@ MonoBehaviour:
   maxLifetime: 5
   splashEffectPrefab: {fileID: 0}
   puddlePrefab: {fileID: 1890461292246626094, guid: 3de2626e513a5464eb137c29717e2f56, type: 3}
+  puddleEnlargeAmount: 0.25
+  dropHitSound: {fileID: 0}
 --- !u!50 &4866348426768338617
 Rigidbody2D:
   serializedVersion: 4
@@ -164,4 +166,4 @@ CircleCollider2D:
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
-  m_Radius: 0.5
+  m_Radius: 0.1

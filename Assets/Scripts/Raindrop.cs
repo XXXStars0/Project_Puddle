@@ -15,6 +15,10 @@ public class Raindrop : MonoBehaviour
     public GameObject splashEffectPrefab; // Water splash particles
     public GameObject puddlePrefab;       // Puddle left on the ground
 
+    [Header("Impact Settings")]
+    [Tooltip("How much size to add to an existing puddle when this raindrop hits it.")]
+    public float puddleEnlargeAmount = 1.0f;
+
     [Header("Audio")]
     public AudioClip dropHitSound;
 
@@ -87,7 +91,20 @@ public class Raindrop : MonoBehaviour
     /// </summary>
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // If we hit an object that belongs to the Ground layer
+        // 1. If we hit an existing puddle directly (enlarge it instead of spawning a new one)
+        Puddle puddle = other.GetComponent<Puddle>();
+        if (puddle != null)
+        {
+            puddle.ModifySize(puddleEnlargeAmount); // Enlarge existing puddle
+            
+            if (splashEffectPrefab != null) Instantiate(splashEffectPrefab, transform.position, Quaternion.identity);
+            if (AudioManager.Instance != null && dropHitSound != null) AudioManager.Instance.PlaySFXRandomPitch(dropHitSound, 0.8f, 1.2f);
+
+            DestroyRaindrop();
+            return;
+        }
+
+        // 2. If we hit an object that belongs to the Ground layer
         if (other.gameObject.layer == LayerMask.NameToLayer("Ground") || other.CompareTag("Ground"))
         {
             OnHitGround();
@@ -130,15 +147,15 @@ public class Raindrop : MonoBehaviour
             Instantiate(splashEffectPrefab, transform.position, Quaternion.identity);
         }
 
-        // Check if we hit an existing puddle first
+        // Check if we hit an existing puddle first using a generous radius (0.5f)
         bool hitExistingPuddle = false;
-        Collider2D[] hitColliders = Physics2D.OverlapPointAll(groundPos);
+        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(groundPos, 0.5f);
         foreach (var col in hitColliders)
         {
             Puddle puddle = col.GetComponent<Puddle>();
             if (puddle != null)
             {
-                puddle.ModifySize(1f); // Enlarge existing puddle
+                puddle.ModifySize(puddleEnlargeAmount); // Enlarge existing puddle
                 hitExistingPuddle = true;
                 break;
             }

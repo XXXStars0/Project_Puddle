@@ -1,6 +1,6 @@
-# 🚀 PROJECT PUDDLE: TASK LIST (20260201)
+# 🚀 PROJECT PUDDLE: TASK LIST (20260221_Noon)
 
-### 🎨 DESIGN & MECHANICS (TODO) - *Ruichen Bao*
+### 🎨 DESIGN & MECHANICS (TODO) 
 
 **🔴 High Priority - Core Tuning:**
 - Polish overall game mechanics, game feel, and difficulty.
@@ -24,7 +24,7 @@
 
 ---
 
-### 🖌️ ART & VISUALS (TODO) - *Maria Gil*
+### 🖌️ ART & VISUALS (TODO) 
 
 **Sprites Needed:**
 - **Cloud**
@@ -57,7 +57,7 @@
 
 ---
 
-### 💻 PROGRAMMING & TECH (TODO) - *Xingyi Shen*
+### 💻 PROGRAMMING & TECH (TODO) 
 
 **🔴 High Priority:**
 - Implement the NPC Emotion system. 

@@ -7,7 +7,7 @@ public class Puddle : MonoBehaviour
 {
     [Header("Size Settings")]
     public float startSize = 1f;
-    public float maxSize = 5f;
+    public float maxSize = 3f; // Hard cap on how large a puddle can grow
     public float currentSize;
 
     [Header("Environmental Effects")]
@@ -16,10 +16,20 @@ public class Puddle : MonoBehaviour
     // Future interface for weather like sunny day
     public float sunEvaporationMultiplier = 1.0f; 
 
+    [Header("Visuals")]
+    public SpriteRenderer spriteRenderer;
+    [Tooltip("Place different puddle shapes here. One will be picked randomly on spawn.")]
+    public Sprite[] puddleVariants;
+
     private Vector3 initialScale;
 
     private void Start()
     {
+        if (spriteRenderer != null && puddleVariants != null && puddleVariants.Length > 0)
+        {
+            spriteRenderer.sprite = puddleVariants[Random.Range(0, puddleVariants.Length)];
+        }
+        
         initialScale = transform.localScale;
         currentSize = startSize;
         UpdateVisuals();

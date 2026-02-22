@@ -75,7 +75,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 7
-  m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b9a5194130ce7e34f8d7542b13d7b2ed, type: 3}
   m_Color: {r: 0.4792453, g: 0.4792453, b: 0.4792453, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -99,7 +99,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 2
-  amount: 20
+  amount: 25
+  lifetime: 8
+  spawnDuration: 0.5
+  flashDuration: 2
+  despawnDuration: 0.5
+  spriteTransform: {fileID: 0}
+  floatAmplitude: 0.15
+  floatSpeed: 3
+  moveDirection: {x: 0, y: 0, z: 0}
+  moveVelocity: 0
+  spawnSound: {fileID: 0}
   collectEffect: {fileID: 0}
 --- !u!58 &3478398749292051419
 CircleCollider2D:
