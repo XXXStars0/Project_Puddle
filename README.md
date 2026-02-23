@@ -11,7 +11,7 @@
 - **Game Jam Page:** [https://itch.io/jam/dgas-2026-spring-game-jam/rate/4312022](https://itch.io/jam/dgas-2026-spring-game-jam/rate/4312022)
 - **Development:** Developed by a 3-person team in 48 hours | 由三人小组在48小时内开发完成
 - **Theme:** Puddle | 主题：水坑
-- **Award:** Best implementation | 奖项：最佳实现 (Best implementation)
+- **Award:** Best implementation & Best Theme  | 奖项：最佳实现 & 主题
 
 ![Unity](https://img.shields.io/badge/Unity-2022%2B-black?style=flat&logo=unity)
 ![C#](https://img.shields.io/badge/C%23-Scripting-blue?style=flat&logo=csharp)
