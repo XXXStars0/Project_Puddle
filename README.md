@@ -1,5 +1,17 @@
 # 💦 Project Puddle
-*A Game Jam Practice Project | Game Jam 热身试验作*
+
+![Banner](Banner.png)
+
+> Raining, playing with puddle, having fun. Make a splash. Spare the heads!  
+> 下雨，玩水坑，找乐子。激起水花。别淋湿头！
+
+*A Game Jam Practice Project | Game Jam 参赛作品*
+
+- **Play the Game (itch.io):** [https://xxxstar.itch.io/puddle-fun](https://xxxstar.itch.io/puddle-fun)
+- **Game Jam Page:** [https://itch.io/jam/dgas-2026-spring-game-jam/rate/4312022](https://itch.io/jam/dgas-2026-spring-game-jam/rate/4312022)
+- **Development:** Developed by a 3-person team in 48 hours | 由三人小组在48小时内开发完成
+- **Theme:** Puddle | 主题：水坑
+- **Award:** Best implementation | 奖项：最佳实现 (Best implementation)
 
 ![Unity](https://img.shields.io/badge/Unity-2022%2B-black?style=flat&logo=unity)
 ![C#](https://img.shields.io/badge/C%23-Scripting-blue?style=flat&logo=csharp)
@@ -48,5 +60,4 @@ The game natively supports both keyboard and mainstream gamepad inputs. / 本作
 - **计分系统**：记录存活时间、满足的 NPC 数量以及生成的 NPC 总数。
 
 ---
-*If you are looking for the Future Tasks and Assignments, please refer to the `Task_List_20260201.md` file!*  
-*如果您想查看后续的开发排期与任务分配，请参阅项目中的 `Task_List_20260201.md` 文件！*
+Team 6
