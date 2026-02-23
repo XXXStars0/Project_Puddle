@@ -60,4 +60,13 @@ The game natively supports both keyboard and mainstream gamepad inputs. / 本作
 - **计分系统**：记录存活时间、满足的 NPC 数量以及生成的 NPC 总数。
 
 ---
-Team 6
+## 👥 CREDITS / 制作人员名单
+
+**Developed by Cornell DGA Spring 2026 Game Jam Team 6**  
+**由 Cornell DGA Spring 2026 Game Jam 第 6 小组开发**
+
+| Member / 成员                  | Roles / 职责                                                                           | Links / 链接                                                                                                                                                                                                                                  |
+| :----------------------------- | :------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Team Member 1 (XXXStars0)**  | Manager, Lead Programmer, Designer, Music Composer<br>项目负责人、主程序员、策划、作曲 | [![GitHub](https://img.shields.io/badge/GitHub-XXXStars0-181717?style=flat&logo=github)](https://github.com/XXXStars0) [![Itch.io](https://img.shields.io/badge/Itch.io-xxxstar-FA5C5C?style=flat&logo=itch.io)](https://xxxstar.itch.io/)    |
+| **Team Member 2 (brcarry)**    | Programmer, Designer, QA / Testing<br>程序员、策划、质量保证与测试                     | [![GitHub](https://img.shields.io/badge/GitHub-brcarry-181717?style=flat&logo=github)](https://github.com/brcarry) [![Itch.io](https://img.shields.io/badge/Itch.io-brcarry-FA5C5C?style=flat&logo=itch.io)](https://itch.io/profile/brcarry) |
+| **Team Member 3 (ethercloud)** | Concept Art, 2D Art, UI Design<br>原画设计、2D美术、UI设计                             | [![Itch.io](https://img.shields.io/badge/Itch.io-ethercloud-FA5C5C?style=flat&logo=itch.io)](https://ethercloud.itch.io/)                                                                                                                     |
